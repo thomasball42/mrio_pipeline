@@ -115,21 +115,24 @@ def main(year, country_of_interest, sua, historic=""):
         fs = fs.drop(columns=["Note"])
 
     else:
-        population = sua[(sua["Element Code"]==511)].Value.values[0]
-        fs = sua[sua["Element Code"]==645].copy()
-        fs["Value"] = fs["Value"] * population  # convert kg/capita/yr to tonnes by multiplying by population
-        cb_conversion_map = pd.read_csv("./input_data/CB_code_FAO_code_for_conversion_factors.csv", encoding="Latin-1")
-        fs = fs.merge(
-            cb_conversion_map[["FAO_code", "CB_code"]],
-            left_on="Item Code",
-            right_on="CB_code",
-            how="left")
-        fs["FAO_code"] = fs["FAO_code"].fillna(fs["Item Code"])
-        fs.drop(columns=["CB_code"], inplace=True)
-        fs = fs.merge(ic[["FAO_code", "item_name"]], on="FAO_code", how="left")
-
+        if 511 in sua["Element Code"].unique():
+            population = sua[(sua["Element Code"]==511)].Value.values[0]
+            fs = sua[sua["Element Code"]==645].copy()
+            fs["Value"] = fs["Value"] * population  # convert kg/capita/yr to tonnes by multiplying by population
+            cb_conversion_map = pd.read_csv("./input_data/CB_code_FAO_code_for_conversion_factors.csv", encoding="Latin-1")
+            fs = fs.merge(
+                cb_conversion_map[["FAO_code", "CB_code"]],
+                left_on="Item Code",
+                right_on="CB_code",
+                how="left")
+            fs["FAO_code"] = fs["FAO_code"].fillna(fs["Item Code"])
+            fs.drop(columns=["CB_code"], inplace=True)
+            fs = fs.merge(ic[["FAO_code", "item_name"]], on="FAO_code", how="left")
+        else:
+            print(f"         No population data for ({area_codes[area_codes['ISO3'] == country_of_interest]['LIST NAME'].values[0]}) in  {year}")#
+            return pd.DataFrame(), pd.DataFrame()
     if len(fs) == 0:
-        print(f"         No food supply data for ({area_codes[area_codes["ISO3"] == country_of_interest]["LIST NAME"].values[0]}) in  {year}")
+        print(f"         No food supply data for ({area_codes[area_codes['ISO3'] == country_of_interest]['LIST NAME'].values[0]}) in  {year}")
         return pd.DataFrame(), pd.DataFrame()
 
 
