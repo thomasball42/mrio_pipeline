@@ -26,7 +26,8 @@ from provenance._process_dat import main as process_dat_main
 
 # CONFIG
 # Select years for which to calculate the results 
-YEARS = list(range(1986, 2022))
+# YEARS = list(range(1986, 2022))
+YEARS = [2021]
 
 # Select a conversion method
 # inputs: ("dry_matter", "Energy", "Protein", "Fiber_TD", "Zinc", "Iron", "Calcium",
@@ -47,9 +48,9 @@ PIPELINE_COMPONENTS:list = [0]
 
 from pandas import read_excel, read_csv
 cdat = read_excel("input_data/nocsDataExport_20251021-164754.xlsx")
-COUNTRIES = [_.upper() for _ in cdat["ISO3"].unique().tolist() if isinstance(_, str)]
+# COUNTRIES = [_.upper() for _ in cdat["ISO3"].unique().tolist() if isinstance(_, str)]
 # COUNTRIES = ["USA", "IND", "BRA", "JPN", "UGA", "GBR"]
-
+COUNTRIES = ["GBR"]
 ##########################################################
 
 def main(years=list(range(1986, 2022)),

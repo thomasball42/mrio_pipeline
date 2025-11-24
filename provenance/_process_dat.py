@@ -157,13 +157,13 @@ def main(year, coi_iso, bh, bf):
 
     df_uk.to_csv(f"{scenPath}/df_{coi_iso.lower()}.csv")
     df_os.to_csv(f"{scenPath}/df_os.csv")
-    xdf.to_csv(f"{scenPath}/xdf.csv")
+    xdf.to_csv(f"{scenPath}/impacts_aggregated.csv") # rename to impacts_aggregated
     
     if "Item" not in kdf.columns:
         
         kdf.columns = [_ if _ != "level_0" else "Item" for _ in kdf.columns]
     
-    kdf.to_csv(f"{scenPath}/kdf.csv")
+    kdf.to_csv(f"{scenPath}/impacts_full.csv")
 
     food_commodity_impacts = kdf[["Item", "tonnage", "ghg_total", "bd_opp_total", "Scarcity_weighted_water_l"]].copy()
     food_commodity_impacts["kgCO2_per_kg"] = food_commodity_impacts.ghg_total / (food_commodity_impacts.tonnage * 1000)
