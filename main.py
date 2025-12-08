@@ -27,6 +27,7 @@ from provenance._process_dat import main as process_dat_main
 # CONFIG
 # Select years for which to calculate the results 
 YEARS = list(range(1986, 2022))
+YEARS=[2018]
 
 # Select a conversion method
 # inputs: ("dry_matter", "Energy", "Protein", "Fiber_TD", "Zinc", "Iron", "Calcium",
@@ -42,13 +43,14 @@ PREFER_IMPORT = "import"
 WORKING_DIR = '.'
 
 # 0 = all, 1 = unzip, 2 = trade matrix, 3 = animal products to feed, 4 = area calculation, 5 = country impacts
-PIPELINE_COMPONENTS:list = [0]
+PIPELINE_COMPONENTS:list = [5]
 # PIPELINE_COMPONENTS:list = [5]
 
 from pandas import read_excel, read_csv
 cdat = read_excel("input_data/nocsDataExport_20251021-164754.xlsx")
 COUNTRIES = [_.upper() for _ in cdat["ISO3"].unique().tolist() if isinstance(_, str)]
 # COUNTRIES = ["USA", "IND", "BRA", "JPN", "UGA", "GBR"]
+COUNTRIES = ["GBR"]
 
 ##########################################################
 

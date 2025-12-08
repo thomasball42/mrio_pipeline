@@ -164,10 +164,11 @@ def main(year, coi_iso, bh, bf):
         kdf.columns = [_ if _ != "level_0" else "Item" for _ in kdf.columns]
     
     kdf.to_csv(f"{scenPath}/kdf.csv")
-
-    food_commodity_impacts = kdf[["Item", "tonnage", "ghg_total", "bd_opp_total", "Scarcity_weighted_water_l"]].copy()
+    
+    food_commodity_impacts = kdf[["Item", "tonnage", "ghg_total", "bd_opp_total", "bd_opp_total_err", "Scarcity_weighted_water_l"]].copy()
     food_commodity_impacts["kgCO2_per_kg"] = food_commodity_impacts.ghg_total / (food_commodity_impacts.tonnage * 1000)
     food_commodity_impacts["exp_extinctions_per_kg"] = food_commodity_impacts.bd_opp_total / (food_commodity_impacts.tonnage * 1000)
+    food_commodity_impacts["exp_extinctions_err_per_kg"] = food_commodity_impacts.bd_opp_total_err / (food_commodity_impacts.tonnage * 1000)
     food_commodity_impacts["scarcity_weighted_water_use_litres_per_kg"] = food_commodity_impacts.Scarcity_weighted_water_l / (food_commodity_impacts.tonnage * 1000)
 
     food_commodity_impacts = food_commodity_impacts.drop(columns=["ghg_total", "bd_opp_total", "Scarcity_weighted_water_l"])
