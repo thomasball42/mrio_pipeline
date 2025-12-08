@@ -26,8 +26,8 @@ from provenance._process_dat import main as process_dat_main
 
 # CONFIG
 # Select years for which to calculate the results 
-# YEARS = list(range(1986, 2022))
-YEARS = [2021]
+YEARS = list(range(1986, 2022))
+# YEARS = [2021]
 
 # Select a conversion method
 # inputs: ("dry_matter", "Energy", "Protein", "Fiber_TD", "Zinc", "Iron", "Calcium",
@@ -48,9 +48,9 @@ PIPELINE_COMPONENTS:list = [0]
 
 from pandas import read_excel, read_csv
 cdat = read_excel("input_data/nocsDataExport_20251021-164754.xlsx")
-# COUNTRIES = [_.upper() for _ in cdat["ISO3"].unique().tolist() if isinstance(_, str)]
+COUNTRIES = [_.upper() for _ in cdat["ISO3"].unique().tolist() if isinstance(_, str)]
 # COUNTRIES = ["USA", "IND", "BRA", "JPN", "UGA", "GBR"]
-COUNTRIES = ["GBR"]
+
 ##########################################################
 
 def main(years=list(range(1986, 2022)),
@@ -127,7 +127,7 @@ def main(years=list(range(1986, 2022)),
             if 4 in pipeline_components:
                 print("    MRIO area calculation is deprecated")
             else:
-                print("   MRIO complete") 
+                print("    MRIO complete") 
             
             # calculate_area(
             #     prefer_import=PREFER_IMPORT,
@@ -144,18 +144,21 @@ def main(years=list(range(1986, 2022)),
                 sua = read_csv(f"./input_data/SUA_Crops_Livestock_E_All_Data_(Normalized).csv", encoding="latin-1", low_memory=False)
 
             for country in countries:
-                print(f"    Processing country: {country}")
-                t0 = time.perf_counter()
-                cons, feed = consumption_provenance_main(year, country, sua, hist)
-                if len(cons) == 0:
-                    continue
-                bf = get_impacts_main(feed, year, country, "feed_impacts_wErr.csv")  
-                bh = get_impacts_main(cons, year, country, "human_consumed_impacts_wErr.csv") 
-                mi = process_dat_main(year, country, bh, bf)
-                missing_items.extend(mi)
-                t1 = time.perf_counter()
-                print(f"         Completed in {t1 - t0:.2f} seconds")
 
+                try:
+                    print(f"    Processing country: {country}")
+                    t0 = time.perf_counter()
+                    cons, feed = consumption_provenance_main(year, country, sua, hist)
+                    if len(cons) == 0:
+                        continue
+                    bf = get_impacts_main(feed, year, country, "feed_impacts_wErr.csv")  
+                    bh = get_impacts_main(cons, year, country, "human_consumed_impacts_wErr.csv") 
+                    mi = process_dat_main(year, country, bh, bf)
+                    missing_items.extend(mi)
+                    t1 = time.perf_counter()
+                    print(f"         Completed in {t1 - t0:.2f} seconds")
+                except Exception as e:
+                    print(e)
             
             # Save missing items to a file
             missing_items_file = Path(f"./results/{year}/missing_items.txt")
@@ -170,6 +173,8 @@ def main(years=list(range(1986, 2022)),
 
 
 if __name__ == "__main__":
+
+
     main(   
         years=YEARS,
         conversion_option=CONVERSION_OPTION,
@@ -178,3 +183,4 @@ if __name__ == "__main__":
         working_dir=WORKING_DIR,
         countries=COUNTRIES
     )
+
