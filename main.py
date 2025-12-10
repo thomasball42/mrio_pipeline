@@ -19,7 +19,7 @@ from processing.calculate_trade_matrix import calculate_trade_matrix
 from processing.animal_products_to_feed import animal_products_to_feed
 from processing.calculate_area import calculate_area
 
-from provenance._consumption_provenance import main as consumption_provenance_main
+from provenance._provenance import main as consumption_provenance_main
 from provenance._get_impacts_bd import get_impacts as get_impacts_main
 from provenance._process_dat import main as process_dat_main
 # from provenance.global_commodity_impacts import main as global_commodity_impacts_main
@@ -27,7 +27,7 @@ from provenance._process_dat import main as process_dat_main
 # CONFIG
 # Select years for which to calculate the results 
 YEARS = list(range(1986, 2022))
-YEARS=[2018]
+YEARS=[2019]
 
 # Select a conversion method
 # inputs: ("dry_matter", "Energy", "Protein", "Fiber_TD", "Zinc", "Iron", "Calcium",
@@ -43,7 +43,7 @@ PREFER_IMPORT = "import"
 WORKING_DIR = '.'
 
 # 0 = all, 1 = unzip, 2 = trade matrix, 3 = animal products to feed, 4 = area calculation, 5 = country impacts
-PIPELINE_COMPONENTS:list = [5]
+PIPELINE_COMPONENTS:list = [3]
 # PIPELINE_COMPONENTS:list = [5]
 
 from pandas import read_excel, read_csv
@@ -139,15 +139,10 @@ def main(years=list(range(1986, 2022)),
         if (0 in pipeline_components) or (5 in pipeline_components):
             print("    Processing country-level provenance and impacts...")
             missing_items = []
-            if hist == "Historic":
-                sua = read_csv(f"./input_data/FoodBalanceSheetsHistoric_E_All_Data_(Normalized).csv", encoding="latin-1", low_memory=False)
-            else:
-                sua = read_csv(f"./input_data/SUA_Crops_Livestock_E_All_Data_(Normalized).csv", encoding="latin-1", low_memory=False)
-
             for country in countries:
                 print(f"    Processing country: {country}")
                 t0 = time.perf_counter()
-                cons, feed = consumption_provenance_main(year, country, sua, hist)
+                cons, feed = consumption_provenance_main(year, country, hist)
                 if len(cons) == 0:
                     continue
                 bf = get_impacts_main(feed, year, country, "feed_impacts_wErr.csv")  

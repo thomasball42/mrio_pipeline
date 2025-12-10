@@ -22,7 +22,7 @@ def get_impacts(wdf, year, coi, filename):
     
     # trim input data to significant values
     wdf = wdf[np.logical_not(wdf.Item.isna())]
-    wdf = wdf[wdf.Value >= 0.015]
+    # wdf = wdf[wdf.Value >= 0.015]
 
     # load additional data and merge into wdf
     crop_database = pd.read_csv(f"{datPath}/crop_db.csv", index_col = 0)

@@ -243,21 +243,23 @@ def animal_products_to_feed(prefer_import="import", conversion_opt="dry_matter",
     animal_product_data_full = pd.concat(results, ignore_index=True)
     print("    Calculating feed use...")
     animal_product_data_full["tons_feed_use"] = animal_product_data_full["feed_share"] * animal_product_data_full["Value"]
+    animal_product_data_full["tons_feed_use_err"] = animal_product_data_full["feed_share"] * animal_product_data_full["Error"]
     
     agg = [] # chunk for memory efficiency
     for cc in  animal_product_data_full["Consumer_Country_Code"].unique():
         subset = animal_product_data_full[animal_product_data_full["Consumer_Country_Code"] == cc]
         subset_feed = (subset
         .groupby(["Year", "Feed_Producer_Country_Code", "Consumer_Country_Code", "Feed_Item_Code", "Item_Code"])
-        .agg({"tons_feed_use": "sum"})
+        .agg({"tons_feed_use": "sum", "tons_feed_use_err": "sum"})
         .reset_index()
         .rename(columns={
             "Feed_Producer_Country_Code": "Producer_Country_Code",
             "tons_feed_use": "Value",
+            "tons_feed_use_err": "Error",
             "Item_Code": "Animal_Product_Code",
             "Feed_Item_Code": "Item_Code",
         })
-        .reindex(columns=["Year", "Producer_Country_Code", "Consumer_Country_Code", "Item_Code", "Value", "Animal_Product_Code"]))
+        .reindex(columns=["Year", "Producer_Country_Code", "Consumer_Country_Code", "Item_Code", "Value", "Error", "Animal_Product_Code"]))
         agg.append(subset_feed)
     
     feed_in_animal_products = pd.concat(agg, ignore_index=True)
@@ -268,7 +270,7 @@ def animal_products_to_feed(prefer_import="import", conversion_opt="dry_matter",
         subset = animal_product_data_full[animal_product_data_full["Feed_Producer_Country_Code"] == cc]
         subset_feed = (subset
             .groupby(["Year", "Feed_Producer_Country_Code", "Producer_Country_Code", "Feed_Item_Code", "Item_Code"])
-            .agg({"tons_feed_use": "sum"})
+            .agg({"tons_feed_use": "sum", "tons_feed_use_err": "sum"})
             .reset_index())
         agg.append(subset_feed)
     feed_use_origin_per_country = pd.concat(agg, ignore_index=True)
@@ -279,17 +281,19 @@ def animal_products_to_feed(prefer_import="import", conversion_opt="dry_matter",
 
     feed_use_origin_per_country.rename(columns={
         "tons_feed_use": "Value",
+        "tons_feed_use_err": "Error",
         "Feed_Item_Code": "Item_Code",
         "Producer_Country_Code": "Consumer_Country_Code",
         "Feed_Producer_Country_Code": "Producer_Country_Code"}, inplace=True)
-
     crop_trade_data = transformed_data[transformed_data["Item_Code"] < 850]
     crop_trade_data = pd.concat([crop_trade_data, feed_use_origin_per_country], ignore_index=True, sort=False)
+    crop_trade_data.Error = np.abs(crop_trade_data.Error)
 
-    crop_trade_data = crop_trade_data.groupby(["Year", "Producer_Country_Code", "Consumer_Country_Code", "Item_Code"], as_index=False)["Value"].sum()
-    crop_trade_data["Animal_Product_Code"] = np.nan
+    crop_trade_data_final = crop_trade_data.groupby(["Year", "Producer_Country_Code", "Consumer_Country_Code", "Item_Code"], as_index=False)["Value"].sum()
+    crop_trade_data_final["Error"] = crop_trade_data.groupby(["Year", "Producer_Country_Code", "Consumer_Country_Code", "Item_Code"], as_index=False)["Error"].sum()["Error"]
+    crop_trade_data_final["Animal_Product_Code"] = np.nan
 
-    output_data = pd.concat([crop_trade_data, feed_in_animal_products])
+    output_data = pd.concat([crop_trade_data_final, feed_in_animal_products])
     print("    Saving feed results...")
     if __name__ == "__main__":
         output_data.to_csv(f"{output_filename[:-4]}_temp.csv", index=False)
@@ -299,4 +303,4 @@ def animal_products_to_feed(prefer_import="import", conversion_opt="dry_matter",
 if __name__ == "__main__":
     import os
     os.chdir("../")
-    animal_products_to_feed("import", "dry_matter", 2013, "Historic")
+    animal_products_to_feed("import", "dry_matter", 2019, "")

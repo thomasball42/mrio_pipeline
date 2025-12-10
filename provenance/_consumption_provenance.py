@@ -273,8 +273,12 @@ def main(year, country_of_interest, sua, historic=""):
     feed_prov = dfx[(dfx.Value > 1E-8)&(dfx.provenance > 0)]
 
 
+
+
     cons_prov = cons_prov[(cons_prov.Ratio > 1E-8)&(cons_prov.provenance > 0)]
+    cons_prov = cons_prov.drop(columns=["Value", "Ratio"])
     cons_prov.to_csv(f"{country_savefile_path}/human_consumed.csv")
     feed_prov = feed_prov[(feed_prov.Value > 1E-8)&(feed_prov.provenance > 0)]
+    feed_prov = feed_prov.drop(columns=["Value", "prov_ratio"])
     feed_prov.to_csv(f"{country_savefile_path}/feed.csv")
     return cons_prov, feed_prov

@@ -48,6 +48,17 @@ def calculate_mrio_matrices(Z, p):
     return R_bar
 
 
+def calculate_naive_matrix(Z, p):
+    summation_vector = np.ones(len(p))
+    x = p + Z @ summation_vector
+    e = summation_vector @ Z
+    one_over_x = np.where(x != 0, 1.0/x, 0.0)
+    g = (x-e) * one_over_x
+    G = np.diag(g)
+    attributable_prod_and_import = Z + np.diag(p)
+    R_error = G @ attributable_prod_and_import
+    return R_error
+
 def mrio_model(item_code, year, p_data, prod_data):
     """
     Perform matrix operations for MRIO calculation
@@ -92,8 +103,11 @@ def mrio_model(item_code, year, p_data, prod_data):
         p[i] = row["Value"] # denoted p in Kastner 2011
 
     R_bar = calculate_mrio_matrices(Z, p)
+    R_error = calculate_naive_matrix(Z, p)
+    R_rel_error = np.divide(np.abs(R_bar - R_error), np.where(R_bar != 0, R_bar, 1))
 
     R_bar = np.round(R_bar, 2)
+    # R_rel_error = np.round(R_rel_error, 5)
     nonzero_mask = R_bar != 0
     i_indices, j_indices = np.where(nonzero_mask)
 
@@ -105,7 +119,8 @@ def mrio_model(item_code, year, p_data, prod_data):
         "Producer_Country_Code": countries[j], 
         "Value_Sum": R_bar[i, j],
         "primary_item": item_code,
-        "Year": year
+        "Year": year,
+        "Value_Error": R_rel_error[i, j],
     } for i, j in zip(i_indices, j_indices)]
 
 
@@ -294,8 +309,9 @@ def calculate_trade_matrix(
         m = mrio_model(ic, yr, primary_data, production_all)
         mrio_output += m
         
-
-    transformed_data = pd.DataFrame(mrio_output, columns=primary_data.columns)
+    cols = list(primary_data.columns)
+    cols.append("Value_Error")
+    transformed_data = pd.DataFrame(mrio_output, columns=cols)
 
     missing_data = production_all[
         (production_all["Element_Code"] == 5510) &
@@ -308,6 +324,9 @@ def calculate_trade_matrix(
     add_data = missing_data[["Area_Code", "Value", "Item_Code", "Year"]].copy()
     add_data = add_data.rename(columns={"Area_Code": "Producer_Country_Code"})
     add_data["Consumer_Country_Code"] = add_data["Producer_Country_Code"]
+    add_data["Value_Error"] = 0
+    print(len(transformed_data[transformed_data.Producer_Country_Code == transformed_data.Consumer_Country_Code]), "diagonal elements in MRIO trade matrix")
+    print(len(transformed_data[(transformed_data.Producer_Country_Code == transformed_data.Consumer_Country_Code)&(transformed_data.Value_Error==0)]), "zero diagonal elements in MRIO trade matrix")
 
     transformed_data = transformed_data.rename(columns={"primary_item": "Item_Code", "Value_Sum": "Value"})
     transformed_data = pd.concat([transformed_data, add_data], ignore_index=True)
@@ -377,13 +396,13 @@ def calculate_trade_matrix(
         how="left")
 
     sugar_data["Value_new"] = sugar_data["Value"] * sugar_data["processing_share"] / sugar_data["Conversion_factor"]
-    sugar_data = sugar_data[["Consumer_Country_Code", "Producer_Country_Code", "Year", "Sugar_Crop_Code", "Value_new"]]
+    sugar_data = sugar_data[["Consumer_Country_Code", "Producer_Country_Code", "Year", "Sugar_Crop_Code", "Value_new", "Value_Error"]]
     sugar_data = sugar_data.rename(columns={"Value_new": "Value", "Sugar_Crop_Code": "Item_Code"})
 
     sugar_production_2 = production_all[
         production_all["Item_Code"].isin(sugar_crop_codes)
         ].rename(columns={"Value": "national_production"})
-
+    
     sugar_data = (sugar_data
         .groupby(["Producer_Country_Code", "Year", "Item_Code"])
         .apply(lambda x: x.assign(sugar_crop_total=x["Value"].sum(skipna=True)))
@@ -400,13 +419,13 @@ def calculate_trade_matrix(
     mask_diagonal = (sugar_data["Producer_Country_Code"] == sugar_data["Consumer_Country_Code"])
     sugar_data.loc[mask_diagonal, "Value"] = sugar_data.loc[mask_diagonal, "Value_new"]
 
-    sugar_data = sugar_data[["Consumer_Country_Code", "Producer_Country_Code", "Value", "Item_Code", "Year"]]
-    print(sugar_data)
+    sugar_data = sugar_data[["Consumer_Country_Code", "Producer_Country_Code", "Value", "Item_Code", "Year", "Value_Error"]]
+    
     output_data = pd.concat([transformed_data[transformed_data["Item_Code"] != 2545], sugar_data], ignore_index=True)
 
     print("    Saving MRIO results...")
-
+    output_data["Error"] = output_data["Value_Error"] * output_data["Value"]
     # transformed_data["Value"] = transformed_data["Value"].round(2)
-    output_data = output_data[["Consumer_Country_Code", "Producer_Country_Code", "Value", "Item_Code", "Year"]]
+    output_data = output_data[["Consumer_Country_Code", "Producer_Country_Code", "Item_Code", "Year", "Value", "Error"]]
     output_data.to_csv(output_filename, index=False)
 
