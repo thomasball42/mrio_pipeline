@@ -172,7 +172,9 @@ def main(year, country_of_interest, sua, historic=""):
     imports_no_feed = add_cols(imports_no_feed, area_codes=area_codes, item_codes=item_codes)
     imports_no_feed = imports_no_feed[~imports_no_feed.Item.isna()]
     imports_no_feed = imports_no_feed[imports_no_feed.Item_Code.isin(imports_feed.Animal_Product_Code.unique())]
-    imports_no_feed.loc[:, 'Animal_Product'] = "Primary"
+
+    if len(imports_no_feed) != 0:
+        imports_no_feed.loc[:, 'Animal_Product'] = "Primary"
 
     imports_total = pd.concat([imports_feed_crops, imports_no_feed])
 
