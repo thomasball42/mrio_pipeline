@@ -188,7 +188,7 @@ def main(year, country_of_interest, sua, historic=""):
 
 
 
-    df_hc, df_hc_err = fs.copy(), fserr.copy() # TODO remove copy
+    df_hc, df_hc_err = fs, fserr
     cf = calculate_conversion_factors("dry_matter", factors.copy(), item_map.copy())
     df_hc = df_hc.merge(cf, on="FAO_code", how="left")
     df_hc_err = df_hc_err.merge(cf, on="FAO_code", how="left")
