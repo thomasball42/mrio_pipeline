@@ -78,25 +78,20 @@ def main(year, coi_iso, bh, bf):
             df_uk.loc[item, "bd_opp_total"] = df_uk.loc[item, "bd_opp_feed"] + df_uk.loc[item, "bd_opp_food"]
             
             # bd opp food err
-            df_uk.loc[item, "bd_opp_food_err"] = df_uk.loc[item, "bd_opp_food"] \
-                * np.sqrt(np.nansum(np.array(bh[(bh.Item==item)&(bh.Producer_Country_Code==coi)].bd_perc_err) ** 2))
-            # bd opp feed err
-            df_uk.loc[item, "bd_opp_feed_err"] = df_uk.loc[item, "bd_opp_feed"] \
-                * np.sqrt(
-                    np.nansum(np.array(bf[(bf.Animal_Product==item)&(bf.Producer_Country_Code==coi)].bd_perc_err) ** 2)
-                    )
+            df_uk.loc[item, "bd_opp_food_err"] = bh[(bh.Item==item)&(bh.Producer_Country_Code==coi)].bd_opp_cost_calc_err.sum()
+
+            df_uk.loc[item, "bd_opp_feed_err"] = bf[(bf.Animal_Product==item)&(bf.Producer_Country_Code==coi)].bd_opp_cost_calc_err.sum()
+
             # bd opp total error
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 fe_err = df_uk.loc[item, "bd_opp_feed_err"]/df_uk.loc[item, "bd_opp_feed"]
                 fo_err = df_uk.loc[item, "bd_opp_food_err"]/df_uk.loc[item, "bd_opp_food"]
             
-            df_uk.loc[item, "bd_opp_total_err"] = df_uk.loc[item, "bd_opp_total"] \
-                * np.sqrt(np.nansum(np.nansum([(fe_err)**2,(fo_err)**2])))
-            
+            df_uk.loc[item, "bd_opp_total_err"] = df_uk.loc[item, "bd_opp_feed_err"] + df_uk.loc[item, "bd_opp_food_err"]
             
             df_uk.loc[item, "Cons"] = bh[(bh.Item == item)&(bh.Producer_Country_Code == coi)].provenance.sum()
-            df_uk.loc[item, "Cons_err"] = np.sqrt(np.nansum(bh[(bh.Item == item)&(bh.Producer_Country_Code == coi)].provenance_err ** 2))
+            df_uk.loc[item, "Cons_err"] = bh[(bh.Item == item)&(bh.Producer_Country_Code == coi)].provenance_err.sum()
             
         except IndexError:
             item_code = lookup[lookup.ItemT_Name == item].ItemT_Code.values[0]
@@ -123,21 +118,17 @@ def main(year, coi_iso, bh, bf):
             df_os.loc[item, "Cons_err"] = np.sqrt(np.nansum(bh[(bh.Item == item)&(bh.Producer_Country_Code !=coi)].provenance_err ** 2))
             
             # bd opp food err
-            df_os.loc[item, "bd_opp_food_err"] = df_os.loc[item, "bd_opp_food"] \
-                * np.sqrt(np.nansum(np.array(bh[(bh.Item==item)&(bh.Producer_Country_Code!=coi)].bd_perc_err) ** 2))
+            df_os.loc[item, "bd_opp_food_err"] = bh[(bh.Item==item)&(bh.Producer_Country_Code!=coi)].bd_opp_cost_calc_err.sum()
+
             # bd opp feed err
-            df_os.loc[item, "bd_opp_feed_err"] = df_os.loc[item, "bd_opp_feed"] \
-                * np.sqrt(
-                    np.nansum(np.array(bf[(bf.Animal_Product==item)&(bf.Producer_Country_Code!=coi)].bd_perc_err) ** 2)
-                    )
+            df_os.loc[item, "bd_opp_feed_err"] = bf[(bf.Animal_Product==item)&(bf.Producer_Country_Code!=coi)].bd_opp_cost_calc_err.sum()
             # bd opp total error
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 fe_err = df_os.loc[item, "bd_opp_feed_err"]/df_os.loc[item, "bd_opp_feed"]
                 fo_err = df_os.loc[item, "bd_opp_food_err"]/df_os.loc[item, "bd_opp_food"]
             
-            df_os.loc[item, "bd_opp_total_err"] = df_os.loc[item, "bd_opp_total"] \
-                * np.sqrt(np.nansum(np.nansum([(fe_err)**2,(fo_err)**2])))
+            df_os.loc[item, "bd_opp_total_err"] = df_os.loc[item, "bd_opp_feed_err"] + df_os.loc[item, "bd_opp_food_err"]
     
         except IndexError:
             item_code = lookup[lookup.ItemT_Name == item].ItemT_Code.values[0]

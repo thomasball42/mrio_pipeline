@@ -285,13 +285,15 @@ def animal_products_to_feed(prefer_import="import", conversion_opt="dry_matter",
         "Feed_Item_Code": "Item_Code",
         "Producer_Country_Code": "Consumer_Country_Code",
         "Feed_Producer_Country_Code": "Producer_Country_Code"}, inplace=True)
-    crop_trade_data = transformed_data[transformed_data["Item_Code"] < 850]
+    crop_trade_data = transformed_data[transformed_data["Item_Code"] < 850].copy()
+    crop_trade_data["percent_error"] = crop_trade_data["Error"] / crop_trade_data["Value"]
     crop_trade_data = pd.concat([crop_trade_data, feed_use_origin_per_country], ignore_index=True, sort=False)
-    crop_trade_data.Error = np.abs(crop_trade_data.Error)
 
     crop_trade_data_final = crop_trade_data.groupby(["Year", "Producer_Country_Code", "Consumer_Country_Code", "Item_Code"], as_index=False)["Value"].sum()
-    crop_trade_data_final["Error"] = crop_trade_data.groupby(["Year", "Producer_Country_Code", "Consumer_Country_Code", "Item_Code"], as_index=False)["Error"].sum()["Error"]
+    crop_trade_data_final["percent_error"] = crop_trade_data.groupby(["Year", "Producer_Country_Code", "Consumer_Country_Code", "Item_Code"], as_index=False)["percent_error"].sum()["percent_error"]
+    crop_trade_data_final["Error"] = crop_trade_data_final["Value"] * crop_trade_data_final["percent_error"]    
     crop_trade_data_final["Animal_Product_Code"] = np.nan
+    crop_trade_data_final.drop(columns=["percent_error"], inplace=True)
 
     output_data = pd.concat([crop_trade_data_final, feed_in_animal_products])
     print("    Saving feed results...")
