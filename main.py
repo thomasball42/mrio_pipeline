@@ -144,7 +144,7 @@ def main(years=list(range(1986, 2022)),
                 try:
                     print(f"    Processing country: {country}")
                     t0 = time.perf_counter()
-                    cons, feed = consumption_provenance_main(year, country, sua, hist)
+                    cons, feed = consumption_provenance_main(year, country, "")
                     if len(cons) == 0:
                         continue
                     bf = get_impacts_main(feed, year, country, "feed_impacts_wErr.csv")  
