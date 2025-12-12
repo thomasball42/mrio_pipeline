@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import os
 import time
-    
+from pathlib import Path
 
 
 def add_cols(indf, area_codes, item_codes):
@@ -59,12 +59,12 @@ def calculate_conversion_factors(conversion_opt, content_factors, item_map_for_c
         return conversion_factors
 
 
-def main(year, country_of_interest, sua, historic=""):
+def main(year, country_of_interest, sua, historic="", results_dir=Path("./results")):
 
     
     datPath = "./input_data"
-    trade_feed = f"./results/{year}/.mrio/TradeMatrixFeed_import_dry_matter.csv"
-    trade_nofeed = f"./results/{year}/.mrio/TradeMatrix_import_dry_matter.csv"
+    trade_feed = results_dir / str(year) / ".mrio" / "TradeMatrixFeed_import_dry_matter.csv"
+    trade_nofeed = results_dir / str(year) / ".mrio" / "TradeMatrix_import_dry_matter.csv"
 
     item_codes = pd.read_csv(f"{datPath}/SUA_Crops_Livestock_E_ItemCodes.csv", encoding = "latin-1", low_memory=False)
 
@@ -136,7 +136,8 @@ def main(year, country_of_interest, sua, historic=""):
         return pd.DataFrame(), pd.DataFrame()
 
 
-    country_savefile_path = f"./results/{year}/{country_of_interest}"
+    # country_savefile_path = f"./results/{year}/{country_of_interest}"
+    country_savefile_path = results_dir / str(year) / country_of_interest
     if not os.path.isdir(country_savefile_path):
         os.makedirs(country_savefile_path)   
 

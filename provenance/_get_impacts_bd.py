@@ -4,7 +4,7 @@ Created on Wed Mar 15 16:41:04 2023
 
 @author: tom
 """
-
+from pathlib import Path
 import pandas as pd
 import numpy as np
 
@@ -14,9 +14,9 @@ except ModuleNotFoundError:
     import data_utils
 
 
-def get_impacts(wdf, year, coi, filename):
+def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     # setup
-    country_savefile_path = f"./results/{year}/{coi}"
+    country_savefile_path = results_dir / str(year) / coi
     datPath = "./input_data"
 
     

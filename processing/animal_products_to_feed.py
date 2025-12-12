@@ -48,7 +48,7 @@ def ml_animal_prod(year, country, production_animals,feed_data, weighing_factors
                 })
     return results
 
-def animal_products_to_feed(prefer_import="import", conversion_opt="dry_matter", year=2013, historic="Historic"):
+def animal_products_to_feed(prefer_import="import", conversion_opt="dry_matter", year=2013, historic="Historic", results_dir=Path("./results")):
     print("    Loading files for animal products to feed conversion...")
 
     cb_map_filename = "input_data/CB_to_primary_items_map.csv"
@@ -58,8 +58,8 @@ def animal_products_to_feed(prefer_import="import", conversion_opt="dry_matter",
     animals_filename = "input_data/Production_Crops_Livestock_E_All_Data_(Normalized).csv"
     weighing_filename = "input_data/weighing_factors.csv"
 
-    trade_matrix_filename = f"results/{year}/.mrio/TradeMatrix_{prefer_import}_{conversion_opt}.csv"
-    output_filename = f"results/{year}/.mrio/TradeMatrixFeed_{prefer_import}_{conversion_opt}.csv"
+    trade_matrix_filename = results_dir / str(year) / ".mrio" / f"TradeMatrix_{prefer_import}_{conversion_opt}.csv"
+    output_filename = results_dir / str(year) / ".mrio" / f"TradeMatrixFeed_{prefer_import}_{conversion_opt}.csv"
 
     if not Path(trade_matrix_filename).exists():
         raise FileNotFoundError(f"Trade matrix file not found: {trade_matrix_filename}")

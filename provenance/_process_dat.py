@@ -4,13 +4,13 @@ import numpy as np
 import os
 import warnings
 import time
+from pathlib import Path
 
-def main(year, coi_iso, bh, bf):
+def main(year, coi_iso, bh, bf, results_dir=Path("./results")):
 
     datPath = "./input_data"
-    scenPath = f"./results/{year}/{coi_iso}"
+    scenPath = results_dir / str(year) / coi_iso
 
-    
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         country_code_data = pd.read_excel(f"{datPath}/nocsDataExport_20251021-164754.xlsx")

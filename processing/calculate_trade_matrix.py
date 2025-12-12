@@ -8,6 +8,7 @@ Please cite ;-)
 Re-written in Python, October 2025 by Louis De Neve
 """
 
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -154,12 +155,13 @@ def calculate_conversion_factors(conversion_opt, content_factors, item_map):
 
 def calculate_trade_matrix(
         conversion_opt="dry_matter",
-        prefer_import="import",
+        prefer_import="import", 
         year=2013,
-        historic="Historic"):
+        historic="Historic",
+        results_dir=Path("./results")):
     """Calculate Trade Matrix module for MRIO pipeline"""
 
-    output_filename = f"results/{year}/.mrio/TradeMatrix_{prefer_import}_{conversion_opt}.csv"
+    output_filename = results_dir / str(year) / ".mrio" / f"TradeMatrix_{prefer_import}_{conversion_opt}.csv"
 
     print("    Loading trade data...")
 
