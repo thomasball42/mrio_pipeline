@@ -32,6 +32,7 @@ from pandas import read_excel, read_csv
 # CONFIG
 RESULTS_DIR = "./results_2"
 YEARS = list(range(2010, 2022))
+YEARS = [2019]
 
 # Select a conversion method
 CONVERSION_OPTION = "dry_matter"
@@ -46,41 +47,27 @@ N_PROCESSES = 16
 
 # Pipeline components to run
 # 0 = all, 1 = unzip, 2 = trade matrix, 3 = animal products to feed, 4 = area calculation, 5 = country impacts
-PIPELINE_COMPONENTS: list = [0]
+PIPELINE_COMPONENTS: list = [5]
 
 cdat = read_excel("input_data/nocsDataExport_20251021-164754.xlsx")
 COUNTRIES = [_.upper() for _ in cdat["ISO3"].unique().tolist() if isinstance(_, str)]
 # COUNTRIES = ["USA", "IND", "BRA", "JPN", "UGA", "GBR"]
-COUNTRIES = ["BRA", "USA"]
+COUNTRIES = ["BRA", "USA", "GBR"]
 
 # globals for workers
-_SUA = None
 _HIST = None
 
 
-def _init_worker(sua_path: str, hist: str):
-    """
-    Loads the SUA CSV once per worker process to speed things up
-    """
-    global _SUA, _HIST
-    _HIST = hist
-    try:
-        _SUA = read_csv(sua_path, encoding="latin-1", low_memory=False)
-    except Exception as e:
-        raise RuntimeError(f"Worker failed to load SUA from {sua_path}: {e}")
-
-
-def _process_country(country: str, year: int):
+def _process_country(country: str, year: int, hist: str):
     """
     Uses the globally-initialized _SUA and _HIST values.
     """
-    global _SUA, _HIST
     missing_items_local = []
     try:
         print(f"    [PID {os.getpid()}] Processing country: {country}")
         t0 = time.perf_counter()
         # consumption_provenance_main returns (cons, feed) per original script
-        cons, feed = consumption_provenance_main(year, country, _SUA, _HIST, results_dir=Path(RESULTS_DIR))
+        cons, feed = consumption_provenance_main(year, country, hist, results_dir=Path(RESULTS_DIR))
         if len(cons) == 0:
             print(f"    [PID {os.getpid()}] No consumption data for {country} in {year}")
             return []  # nothing to do for this country
@@ -160,6 +147,9 @@ def main(years=list(range(1986, 2022)),
         # mrio_dir = Path(f"./results/{year}/.mrio")
         mrio_dir = results_dir / str(year) / ".mrio"
         mrio_dir.mkdir(exist_ok=True)
+        for country in countries:
+            country_dir = results_dir / str(year) / country
+            country_dir.mkdir(exist_ok=True)
 
         print(f"\nProcessing year: {year}")
 
@@ -202,20 +192,12 @@ def main(years=list(range(1986, 2022)),
                 sua_path = "./input_data/SUA_Crops_Livestock_E_All_Data_(Normalized).csv"
 
             if len(countries) <= 1 or n_processes == 1:
-                try:
-                    if hist == "Historic":
-                        sua = read_csv(sua_path, encoding="latin-1", low_memory=False)
-                    else:
-                        sua = read_csv(sua_path, encoding="latin-1", low_memory=False)
-                except Exception as e:
-                    print(f"Failed to load SUA in main process: {e}")
-                    sua = None
 
                 for country in countries:
                     try:
                         print(f"    Processing country: {country}")
                         t0 = time.perf_counter()
-                        cons, feed = consumption_provenance_main(year, country, sua, hist, results_dir=results_dir)
+                        cons, feed = consumption_provenance_main(year, country, hist, results_dir=results_dir)
                         if len(cons) == 0:
                             continue
                         bf = get_impacts_main(feed, year, country, "feed_impacts_wErr.csv", results_dir=results_dir)
@@ -231,9 +213,9 @@ def main(years=list(range(1986, 2022)),
                 # Use a Pool of worker processes. Initialize each worker to load the SUA file once.
                 processes = min(n_processes, len(countries))
                 print(f"    Spawning {processes} worker processes for {len(countries)} countries")
-                pool = multiprocessing.Pool(processes=processes, initializer=_init_worker, initargs=(sua_path, hist))
+                pool = multiprocessing.Pool(processes=processes)
                 try:
-                    args_iterable = [(c, year) for c in countries]
+                    args_iterable = [(c, year, hist) for c in countries]
 
                     results = pool.starmap(_process_country, args_iterable)
 

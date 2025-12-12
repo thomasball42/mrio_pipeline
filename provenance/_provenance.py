@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import os
 import time
+from pathlib import Path
     
 
 
@@ -25,12 +26,12 @@ def add_cols(indf, area_codes, item_codes):
     return indf
 
 
-def main(year, country_of_interest, historic=""):
+def main(year, country_of_interest, sua, historic="", results_dir=Path("./results")):
 
     
     datPath = "./input_data"
-    trade_feed = f"./results/{year}/.mrio/TradeMatrixFeed_import_dry_matter.csv"
-    trade_nofeed = f"./results/{year}/.mrio/TradeMatrix_import_dry_matter.csv"
+    trade_feed = results_dir / str(year) / ".mrio" / "TradeMatrixFeed_import_dry_matter.csv"
+    trade_nofeed = results_dir / str(year) / ".mrio" / "TradeMatrix_import_dry_matter.csv"
 
 
     import warnings
@@ -86,7 +87,7 @@ def main(year, country_of_interest, historic=""):
     human_consumed = human_consumed.rename(columns={"Value": "provenance", "Error": "provenance_err"})
     human_consumed["Animal_Product_Code"] = ""
 
-    country_savefile_path = f"./results/{year}/{country_of_interest}"
+    country_savefile_path = results_dir / str(year) / country_of_interest
     human_consumed.to_csv(f"{country_savefile_path}/human_consumed_no_sua.csv")
     feed.to_csv(f"{country_savefile_path}/feed_no_sua.csv")
 
