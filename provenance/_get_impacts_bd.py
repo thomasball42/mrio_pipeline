@@ -13,6 +13,9 @@ try:
 except ModuleNotFoundError:
     import data_utils
 
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+
 
 def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     # setup
@@ -119,65 +122,87 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
 
 
     # biodiversity opportunity cost
-    bd_path = f"{datPath}/country_opp_cost_v6.csv"
-    bd_opp_cost = pd.read_csv(bd_path, index_col = 0)
+    bd_path = f"{datPath}/LIFE_results_SPAM_2020.csv"
+    bd_opp_cost = pd.read_csv(bd_path)
+
+    bd_opp_cost = bd_opp_cost[bd_opp_cost.band_name=="all"]
+    bd_opp_cost.deltaE_mean *= -bd_opp_cost.sp_count
+    bd_opp_cost.deltaE_mean_sem *= bd_opp_cost.sp_count
+    crop_database.SPAM_name_abr = crop_database.SPAM_name_abr.str.upper()
+
+    pasture = f"{datPath}/country_opp_cost_v6.csv"
+    pasture = pd.read_csv(pasture, index_col = 0)
 
 
     # calculate fallback 2
-    oc_past = bd_opp_cost.past
+    oc_past = pasture.past
     oc_past = oc_past[oc_past > 0]
     oc_past = np.exp(np.log(oc_past).mean())
-    oc_past_err = bd_opp_cost.past_err
+    oc_past_err = pasture.past_err
     oc_past_err = oc_past_err[oc_past_err >0]
     oc_past_err = np.exp(np.log(oc_past_err).mean())
-    oc_crop = bd_opp_cost.crop
-    oc_crop = oc_crop[oc_crop > 0]
-    oc_crop = np.exp(np.log(oc_crop).mean())
-    oc_crop_err = bd_opp_cost.crop_err
-    oc_crop_err = oc_crop_err[oc_crop_err >0]
-    oc_crop_err = np.exp(np.log(oc_crop_err).mean())
+
+    oc_crop = bd_opp_cost[(bd_opp_cost.deltaE_mean > 0)].copy()
+    oc_crop_pixels = oc_crop.pixel_count.sum()
+    oc_crop["weighted_deltaE"] = oc_crop.deltaE_mean * oc_crop.pixel_count
+    oc_crop = np.exp(np.log(oc_crop.weighted_deltaE).mean())/oc_crop_pixels
+
+    oc_crop_err = bd_opp_cost[(bd_opp_cost.deltaE_mean_sem > 0)].copy()
+    oc_crop_err_pixels = oc_crop_err.pixel_count.sum()
+    oc_crop_err["weighted_deltaE_sem"] = oc_crop_err.deltaE_mean_sem * oc_crop_err.pixel_count
+    oc_crop_err = np.exp(np.log(oc_crop_err.weighted_deltaE_sem).mean())/oc_crop_err_pixels
+    
 
 
     # reshape bd_opp_cost for merging
-    bd_opp_cost = bd_opp_cost.stack()
-    bd_opp_cost = bd_opp_cost.reset_index()
-    bd_opp_cost = bd_opp_cost.rename(columns={"level_0":"Country_ISO", "level_1":"gz_name", 0:"opp_cost_val"})
-
+    bd_opp_cost = bd_opp_cost[["ISO3", "item_name", "deltaE_mean", "deltaE_mean_sem"]]
+    bd_opp_cost = bd_opp_cost.rename(columns={"ISO3":"Country_ISO", "item_name":"spam_name", "deltaE_mean":"opp_cost_val", "deltaE_mean_sem": "opp_cost_err"})
 
     # calculate global averages for fallback 1
-    global_bd_opp_cost = pd.DataFrame() 
-    global_bd_opp_cost_err = pd.DataFrame() 
-    for v in bd_opp_cost.gz_name.unique():
-        subset = bd_opp_cost[(bd_opp_cost.gz_name == v)&(bd_opp_cost.opp_cost_val>0)]["opp_cost_val"].dropna().values
+    global_bd_opp_cost = pd.DataFrame()
+    for v in bd_opp_cost.spam_name.dropna().unique():
+        subset = bd_opp_cost[(bd_opp_cost.spam_name == v)&(bd_opp_cost.opp_cost_val>0)]["opp_cost_val"].dropna().values
         mean = np.exp(np.log(subset).mean())
-        if v[-3:] == "err":
-            global_bd_opp_cost_err.loc[v, "opp_cost_err_fallback"] = mean
-        else:
-            global_bd_opp_cost.loc[v, "opp_cost_val_fallback"] = mean
+        subset2 = bd_opp_cost[(bd_opp_cost.spam_name == v)&(bd_opp_cost.opp_cost_val>0)]["opp_cost_err"].dropna().values
+        err = np.exp(np.log(subset2).mean())
+        global_bd_opp_cost.loc[v, "opp_cost_val_fallback"] = mean
+        global_bd_opp_cost.loc[v, "opp_cost_err_fallback"] = err
 
+    animals = list(crop_database.animal_bd_name.dropna().unique())
+    animals_err = [f"{a}_err" for a in animals]
 
-    # get gz_name to merge with life data
+    pasture_opp_costs = pasture[animals]
+    pasture_opp_costs = pasture_opp_costs.stack()
+    pasture_opp_costs = pasture_opp_costs.reset_index()
+    pasture_opp_costs = pasture_opp_costs.rename(columns={"level_0":"Country_ISO", "level_1":"spam_name", 0:"opp_cost_val"})
+
+    pasture_opp_costs_err = pasture[animals_err]
+    pasture_opp_costs_err = pasture_opp_costs_err.stack()
+    pasture_opp_costs_err = pasture_opp_costs_err.reset_index()
+    pasture_opp_costs_err = pasture_opp_costs_err.rename(columns={"level_0":"Country_ISO", "level_1":"spam_name", 0:"opp_cost_err"})
+    pasture_opp_costs_err.spam_name = pasture_opp_costs_err.spam_name.replace({"_err":""}, regex=True)
+    pasture_opp_costs = pasture_opp_costs.merge(pasture_opp_costs_err, on=["Country_ISO", "spam_name"])
+
+    # get spam_name to merge with life data
     animal_df = wdf[wdf.Animal_Product == "Primary"].copy()
     crop_df = wdf[wdf.Animal_Product != "Primary"].copy()
     animal_df = animal_df.merge(crop_database[["Item_Code", "animal_bd_name"]], on="Item_Code", how="left")
-    animal_df = animal_df.rename(columns={"animal_bd_name":"gz_name"})
-    crop_df = crop_df.merge(crop_database[["Item_Code", "GAEZres06"]], on="Item_Code", how="left")
-    crop_df = crop_df.rename(columns={"GAEZres06":"gz_name"})
-    wdf = pd.concat([animal_df, crop_df], axis=0)
-    wdf["gz_name_err"] = wdf["gz_name"] + "_err"
+    animal_df = animal_df.rename(columns={"animal_bd_name":"spam_name"})
+    crop_df = crop_df.merge(crop_database[["Item_Code", "SPAM_name_abr"]], on="Item_Code", how="left")
+    crop_df = crop_df.rename(columns={"SPAM_name_abr":"spam_name"})
 
+    
 
     # merge in life data
-    wdf = wdf.merge(bd_opp_cost, how="left", on=["Country_ISO", "gz_name"])
-    bd_opp_cost = bd_opp_cost.rename(columns={"opp_cost_val":"opp_cost_err", "gz_name":"gz_name_err"})
-    wdf = wdf.merge(bd_opp_cost, how="left", on=["Country_ISO", "gz_name_err"])
-
+    crop_df = crop_df.merge(bd_opp_cost, how="left", on=["Country_ISO", "spam_name"])
+    animal_df = animal_df.merge(pasture_opp_costs, how="left", on=["Country_ISO", "spam_name"])
+    wdf = pd.concat([crop_df, animal_df], axis=0)
 
     # fallback 1 (global item averages)
-    wdf = wdf.merge(global_bd_opp_cost, how="left", left_on=["gz_name"], right_index=True)
-    wdf = wdf.merge(global_bd_opp_cost_err, how="left", left_on=["gz_name_err"], right_index=True)
+    wdf = wdf.merge(global_bd_opp_cost, how="left", left_on=["spam_name"], right_index=True)
     wdf.loc[wdf.opp_cost_val.isna(), "opp_cost_val"] = wdf.loc[wdf.opp_cost_val.isna(), "opp_cost_val_fallback"]
     wdf.loc[wdf.opp_cost_err.isna(), "opp_cost_err"] = wdf.loc[wdf.opp_cost_err.isna(), "opp_cost_err_fallback"]
+
 
 
     # fallback 2 (global type averages)
@@ -185,11 +210,10 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     wdf.loc[(wdf.opp_cost_val.isna())&(wdf.Animal_Product=="Primary"), "opp_cost_val"] = oc_past
     wdf.loc[(wdf.opp_cost_err.isna())&(wdf.Animal_Product!="Primary"), "opp_cost_err"] = oc_crop_err
     wdf.loc[(wdf.opp_cost_err.isna())&(wdf.Animal_Product=="Primary"), "opp_cost_err"] = oc_past_err
-    wdf = wdf.drop(columns=["gz_name", "gz_name_err", "opp_cost_val_fallback", "opp_cost_err_fallback"])
+    wdf = wdf.drop(columns=["opp_cost_val_fallback", "opp_cost_err_fallback"])
 
     # convert opp cost from km2 to m2
-    wdf["bd_opp_cost_m2"] = wdf["opp_cost_val"] / 1000000
-
+    wdf["bd_opp_cost_m2"] = np.abs(wdf["opp_cost_val"] / 1000000)
 
 
     wdf.loc[wdf.Animal_Product=="Primary", "bd_val"] = wdf.loc[wdf.Animal_Product=="Primary", "Pasture_avg_calc"]
@@ -205,4 +229,15 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     
     wdf.to_csv(f"{country_savefile_path}/{filename}")
     return wdf
+
+if __name__ == "__main__":
+    YEARS = [2019]
+    COUNTRIES = ["GBR"]
+    import os
+    os.chdir("../")
+    for year in YEARS:
+        for country in COUNTRIES:
+            print(f"Processing {country} for year {year}...")
+            hc = pd.read_csv(f"results/{year}/{country}/human_consumed_no_sua.csv")
+            get_impacts(hc, year, country, "human_consumed_impacts_wErr.csv")
 
