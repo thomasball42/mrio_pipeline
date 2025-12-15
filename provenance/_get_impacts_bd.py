@@ -7,6 +7,7 @@ Created on Wed Mar 15 16:41:04 2023
 from pathlib import Path
 import pandas as pd
 import numpy as np
+import os
 
 try:
     import provenance.data_utils as data_utils
@@ -25,7 +26,7 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     wdf = wdf[wdf.Value >= 0.015]
 
     # load additional data and merge into wdf
-    crop_database = pd.read_csv(f"{datPath}/crop_db.csv", index_col = 0)
+    commodity_crosswalk = pd.read_csv(f"{datPath}/commodity_crosswalk.csv", index_col = 0)
     wwf = data_utils.get_wwf_pbd(datPath)
     Sm_wwf_items = pd.read_csv(f"{datPath}/schwarzmueller_wwf.csv",index_col = 0)
     wdf = (wdf
@@ -117,11 +118,15 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     wdf["Pasture_avg_calc_err"] = wdf["Pasture_avg_calc"] * wdf["err"]
     wdf = wdf.drop(columns=["err"])
 
-
     # biodiversity opportunity cost
-    bd_path = f"{datPath}/country_opp_cost_v6.csv"
-    bd_opp_cost = pd.read_csv(bd_path, index_col = 0)
+    # bd_path = f"{datPath}/country_opp_cost_v6.csv"
+    spam_years = os.listdir(os.path.join(datPath, "mapspam_outputs", "outputs"))
+    spam_years = [int(yr) for yr in spam_years]
+    next_year = min([yr for yr in spam_years if yr >= year], default=max(spam_years))
 
+    bd_path = os.path.join(datPath, "mapspam_outputs", "outputs", str(next_year), f"processed_results_{next_year}.csv")
+    bd_opp_cost = pd.read_csv(bd_path, index_col = 0)
+    quit("UNFINISHED BUSINESS")
 
     # calculate fallback 2
     oc_past = bd_opp_cost.past
@@ -159,9 +164,9 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     # get gz_name to merge with life data
     animal_df = wdf[wdf.Animal_Product == "Primary"].copy()
     crop_df = wdf[wdf.Animal_Product != "Primary"].copy()
-    animal_df = animal_df.merge(crop_database[["Item_Code", "animal_bd_name"]], on="Item_Code", how="left")
+    animal_df = animal_df.merge(commodity_crosswalk[["Item_Code", "animal_bd_name"]], on="Item_Code", how="left")
     animal_df = animal_df.rename(columns={"animal_bd_name":"gz_name"})
-    crop_df = crop_df.merge(crop_database[["Item_Code", "GAEZres06"]], on="Item_Code", how="left")
+    crop_df = crop_df.merge(commodity_crosswalk[["Item_Code", "GAEZres06"]], on="Item_Code", how="left")
     crop_df = crop_df.rename(columns={"GAEZres06":"gz_name"})
     wdf = pd.concat([animal_df, crop_df], axis=0)
     wdf["gz_name_err"] = wdf["gz_name"] + "_err"
