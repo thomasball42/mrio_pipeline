@@ -342,6 +342,7 @@ def calculate_trade_matrix(
         (sugar_processing["Element_Code"] == 5131)&
         (sugar_processing["Area_Code"] < 300)&
         (sugar_processing["Value"] > 0)]
+    
     sugar_processing['Value'] = sugar_processing['Value']*1000
 
     sugar_processing["Item_Code"] = sugar_processing["Item_Code"].replace({2536: 156, 2537: 157})

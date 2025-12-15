@@ -51,7 +51,7 @@ def get_impacts(wdf, year, coi, filename):
     fao_prod = pd.read_csv(f"{datPath}/Production_Crops_Livestock_E_All_Data_(Normalized).csv", encoding = "latin-1", low_memory=False)
     fao_prod = fao_prod[fao_prod.Year == year]
     yield_dat = fao_prod[fao_prod.Element == "Yield"]
-    crop_db = pd.read_csv(f"{datPath}/crop_db.csv", index_col = 0)
+    commodity_crosswalk = pd.read_csv(f"{datPath}/commodity_crosswalk.csv", index_col = 0)
 
     wdf = (wdf
         .merge(Sm_wwf_items[["Item_Code_FAO", "WWF_cat"]], left_on="Item_Code", right_on="Item_Code_FAO", how="left")
@@ -163,9 +163,9 @@ def get_impacts(wdf, year, coi, filename):
         gz_name = 0
         opp_cost_err = oc_crop_err
         if is_animal == True:
-            gz_name = crop_db[crop_db.Item_Code == item_code].animal_bd_name.squeeze()
+            gz_name = commodity_crosswalk[commodity_crosswalk.Item_Code == item_code].animal_bd_name.squeeze()
         else: 
-            gz_name = crop_db[crop_db.Item_Code == item_code].GAEZres06.squeeze()
+            gz_name = commodity_crosswalk[commodity_crosswalk.Item_Code == item_code].GAEZres06.squeeze()
         if len(gz_name) == 0:
             opp_cost_val = np.sqrt(oc_crop * oc_past)
         else:

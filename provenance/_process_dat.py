@@ -21,7 +21,7 @@ def main(year, coi_iso, bh, bf, results_dir=Path("./results")):
     
     # coi = 229
 
-    cropdb = pd.read_csv(f"{datPath}/crop_db.csv")
+    commodity_crosswalk = pd.read_csv(f"{datPath}/commodity_crosswalk.csv")
     
     # bh = pd.read_csv(f"{scenPath}/human_consumed_impacts_wErr.csv", index_col = 0)
     # bf = pd.read_csv(f"{scenPath}/feed_impacts_wErr.csv", index_col = 0)
@@ -65,7 +65,7 @@ def main(year, coi_iso, bh, bf, results_dir=Path("./results")):
         x = xdfs_uk.loc[item]
         try:
             item_code = lookup[lookup.ItemT_Name == item].ItemT_Code.values[0]
-            df_uk.loc[item, "Group"] = cropdb[cropdb.Item_Code == item_code][grouping].values[0]
+            df_uk.loc[item, "Group"] = commodity_crosswalk[commodity_crosswalk.Item_Code == item_code][grouping].values[0]
             df_uk.loc[item, "tonnage"] = x.provenance
             df_uk.loc[item, "Pasture_m2"] = x.Pasture_m2
             df_uk.loc[item, "Arable_m2"] = x.Arable_m2
@@ -102,7 +102,7 @@ def main(year, coi_iso, bh, bf, results_dir=Path("./results")):
         x = xdfs_os.loc[item]
         try:
             item_code = lookup[lookup.ItemT_Name == item].ItemT_Code.values[0]
-            df_os.loc[item, "Group"] = cropdb[cropdb.Item_Code == item_code][grouping].values[0]
+            df_os.loc[item, "Group"] = commodity_crosswalk[commodity_crosswalk.Item_Code == item_code][grouping].values[0]
             df_os.loc[item, "tonnage"] = x.provenance
             df_os.loc[item, "Pasture_m2"] = x.Pasture_m2
             df_os.loc[item, "Arable_m2"] = x.Arable_m2
