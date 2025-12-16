@@ -44,6 +44,7 @@ def main(year, country_of_interest, sua, historic="", results_dir=Path("./result
     prov_mat_no_feed = pd.read_csv(trade_nofeed)
     prov_mat_feed = pd.read_csv(trade_feed)
     animal_codes = prov_mat_feed["Animal_Product_Code"].dropna().unique().tolist()
+    # print(country_code)
 
     alpha = prov_mat_no_feed[prov_mat_no_feed["Item_Code"].isin(animal_codes)].copy()
     beta = prov_mat_feed[~prov_mat_feed["Animal_Product_Code"].isna()].copy()
@@ -69,6 +70,9 @@ def main(year, country_of_interest, sua, historic="", results_dir=Path("./result
 
     animals_consumed_in_country = alpha[alpha.Consumer_Country_Code == country_code].copy()
     
+    # alpha2=add_cols(animals_consumed_in_country, area_codes, item_codes)
+    # print(alpha2[alpha2.Animal_Product=="Primary"].groupby(["Item"])["Value"].sum())
+    
     animals_consumed_in_country["match_code"] = animals_consumed_in_country["Producer_Country_Code"].astype(str) + "_" + animals_consumed_in_country["Item_Code"].astype(str)
     beta["match_code"] = beta["Consumer_Country_Code"].astype(str) + "_" + beta["Animal_Product_Code"].astype(str)
     feed = beta[beta["match_code"].isin(animals_consumed_in_country["match_code"])]
@@ -82,6 +86,7 @@ def main(year, country_of_interest, sua, historic="", results_dir=Path("./result
 
     feed = add_cols(feed, area_codes, item_codes)
     human_consumed = add_cols(human_consumed, area_codes, item_codes)
+    # print(human_consumed[human_consumed.Animal_Product=="Primary"].groupby(["Item"])["Value"].sum().sum())
     
     feed = feed.rename(columns={"Value": "provenance", "Error": "provenance_err"})
     human_consumed = human_consumed.rename(columns={"Value": "provenance", "Error": "provenance_err"})

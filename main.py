@@ -31,10 +31,9 @@ from pandas import read_excel, read_csv
 
 # CONFIG
 RESULTS_DIR = "./results"
-RESULTS_DIR = "test"
 
 YEARS = list(range(2010, 2022))
-YEARS = [2019]
+YEARS = [2013]
 
 # Select a conversion method
 CONVERSION_OPTION = "dry_matter"
@@ -45,17 +44,16 @@ PREFER_IMPORT = "import"
 # select working directory
 WORKING_DIR = '.'
 
-N_PROCESSES = 16
+N_PROCESSES = 8
 
 # Pipeline components to run
 # 0 = all, 1 = unzip, 2 = trade matrix, 3 = animal products to feed, 4 = area calculation, 5 = country impacts
-PIPELINE_COMPONENTS: list = [5]
-PIPELINE_COMPONENTS: list = [5]
+PIPELINE_COMPONENTS: list = [2]
 
 cdat = read_excel("input_data/nocsDataExport_20251021-164754.xlsx")
 COUNTRIES = [_.upper() for _ in cdat["ISO3"].unique().tolist() if isinstance(_, str)]
-# COUNTRIES = ["USA", "IND", "BRA", "JPN", "UGA", "GBR"]
-COUNTRIES = ["GBR"]
+COUNTRIES = ["USA", "IND", "BRA", "JPN", "UGA", "GBR"]
+# COUNTRIES = ["GBR"]
 
 # globals for workers
 _HIST = None
@@ -99,7 +97,7 @@ def main(years=list(range(1986, 2022)),
     if countries is None:
         countries = COUNTRIES
 
-    os.system('cls' if os.name == 'nt' else 'clear')
+    # os.system('cls' if os.name == 'nt' else 'clear')
     os.chdir(working_dir)
 
     component_dict = {
@@ -197,20 +195,20 @@ def main(years=list(range(1986, 2022)),
             if len(countries) <= 1 or n_processes == 1:
 
                 for country in countries:
-                    try:
-                        print(f"    Processing country: {country}")
-                        t0 = time.perf_counter()
-                        cons, feed = consumption_provenance_main(year, country, hist, results_dir=results_dir)
-                        if len(cons) == 0:
-                            continue
-                        bf = get_impacts_main(feed, year, country, "feed_impacts_wErr.csv", results_dir=results_dir)
-                        bh = get_impacts_main(cons, year, country, "human_consumed_impacts_wErr.csv", results_dir=results_dir)
-                        mi = process_dat_main(year, country, bh, bf, results_dir=results_dir)
-                        missing_items.extend(mi)
-                        t1 = time.perf_counter()
-                        print(f"         Completed in {t1 - t0:.2f} seconds")
-                    except Exception as e:
-                        print(f"Error processing {country}: {e}")
+                    # try:
+                    print(f"    Processing country: {country}")
+                    t0 = time.perf_counter()
+                    cons, feed = consumption_provenance_main(year, country, hist, results_dir=results_dir)
+                    if len(cons) == 0:
+                        continue
+                    bf = get_impacts_main(feed, year, country, "feed_impacts_wErr.csv", results_dir=results_dir)
+                    bh = get_impacts_main(cons, year, country, "human_consumed_impacts_wErr.csv", results_dir=results_dir)
+                    mi = process_dat_main(year, country, bh, bf, results_dir=results_dir)
+                    missing_items.extend(mi)
+                    t1 = time.perf_counter()
+                    print(f"         Completed in {t1 - t0:.2f} seconds")
+                    # except Exception as e:
+                    #     print(f"Error processing {country}: {e}")
 
             else:
                 # Use a Pool of worker processes. Initialize each worker to load the SUA file once.

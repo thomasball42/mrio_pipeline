@@ -154,13 +154,17 @@ def main(year, coi_iso, bh, bf, results_dir=Path("./results")):
         
         kdf.columns = [_ if _ != "level_0" else "Item" for _ in kdf.columns]
     
+    for item in kdf.Item.unique():
+        kdf.loc[kdf.Item==item, "primary_tonnage"] = xdf[xdf.Item==item].provenance.sum()
+        
     kdf.to_csv(f"{scenPath}/impacts_aggregated.csv")
-    
-    food_commodity_impacts = kdf[["Item", "tonnage", "ghg_total", "bd_opp_total", "bd_opp_total_err", "Scarcity_weighted_water_l"]].copy()
-    food_commodity_impacts["kgCO2_per_kg"] = food_commodity_impacts.ghg_total / (food_commodity_impacts.tonnage * 1000)
-    food_commodity_impacts["exp_extinctions_per_kg"] = food_commodity_impacts.bd_opp_total / (food_commodity_impacts.tonnage * 1000)
-    food_commodity_impacts["exp_extinctions_err_per_kg"] = food_commodity_impacts.bd_opp_total_err / (food_commodity_impacts.tonnage * 1000)
-    food_commodity_impacts["scarcity_weighted_water_use_litres_per_kg"] = food_commodity_impacts.Scarcity_weighted_water_l / (food_commodity_impacts.tonnage * 1000)
+        
+
+    food_commodity_impacts = kdf[["Item", "primary_tonnage", "ghg_total", "bd_opp_total", "bd_opp_total_err", "Scarcity_weighted_water_l"]].copy()
+    food_commodity_impacts["kgCO2_per_kg"] = food_commodity_impacts.ghg_total / (food_commodity_impacts.primary_tonnage * 1000)
+    food_commodity_impacts["exp_extinctions_per_kg"] = food_commodity_impacts.bd_opp_total / (food_commodity_impacts.primary_tonnage * 1000)
+    food_commodity_impacts["exp_extinctions_err_per_kg"] = food_commodity_impacts.bd_opp_total_err / (food_commodity_impacts.primary_tonnage * 1000)
+    food_commodity_impacts["scarcity_weighted_water_use_litres_per_kg"] = food_commodity_impacts.Scarcity_weighted_water_l / (food_commodity_impacts.primary_tonnage * 1000)
 
     food_commodity_impacts = food_commodity_impacts.drop(columns=["ghg_total", "bd_opp_total", "Scarcity_weighted_water_l"])
     last_row = food_commodity_impacts.iloc[-1].copy()
@@ -170,7 +174,7 @@ def main(year, coi_iso, bh, bf, results_dir=Path("./results")):
 
     old_to_new = pd.read_csv(f"{datPath}/composition_old_vs_new.csv")
     old_to_new = old_to_new.merge(food_commodity_impacts, left_on="New", right_on="Item", how="left")
-    old_to_new.drop(columns=["Item", "New", "tonnage"], inplace=True)
+    old_to_new.drop(columns=["Item", "New"], inplace=True)
     old_to_new.rename(columns={"Old":""}, inplace=True)
     old_to_new.to_csv(f"{scenPath}/food_commodity_impacts.csv", index=False)
 

@@ -129,11 +129,11 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     spam_years = [int(yr) for yr in spam_years]
     next_year = min([yr for yr in spam_years if yr >= year], default=max(spam_years))
     bd_path = os.path.join(datPath, "mapspam_outputs", "outputs", str(next_year), f"processed_results_{next_year}.csv")
-
+    print(bd_path)
     bd_opp_cost = pd.read_csv(bd_path)
+    bd_opp_cost = bd_opp_cost[bd_opp_cost.band_name=="all"]
     bd_opp_cost.deltaE_mean *= -bd_opp_cost.sp_count
     bd_opp_cost.deltaE_mean_sem *= bd_opp_cost.sp_count
-    commodity_crosswalk[f"SPAM_{next_year}"] = commodity_crosswalk[f"SPAM_{next_year}"].str.upper()
 
     pasture = f"{datPath}/country_opp_cost_v6.csv"
     pasture = pd.read_csv(pasture, index_col = 0)
@@ -193,8 +193,8 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     crop_df = wdf[wdf.Animal_Product != "Primary"].copy()
     animal_df = animal_df.merge(commodity_crosswalk[["Item_Code", "animal_bd_name"]], on="Item_Code", how="left")
     animal_df = animal_df.rename(columns={"animal_bd_name":"spam_name"})
-    crop_df = crop_df.merge(commodity_crosswalk[["Item_Code", f"SPAM_{next_year}"]], on="Item_Code", how="left")
-    crop_df = crop_df.rename(columns={f"SPAM_{next_year}":"spam_name"})
+    crop_df = crop_df.merge(commodity_crosswalk[["Item_Code", f"spam_{next_year}"]], on="Item_Code", how="left")
+    crop_df = crop_df.rename(columns={f"spam_{next_year}":"spam_name"})
 
     
 
