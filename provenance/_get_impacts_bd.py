@@ -1,9 +1,10 @@
-# -*- coding: utf-8 -*-
 """
 Created on Wed Mar 15 16:41:04 2023
 
-@author: tom
+@author: Thomas Ball
+@editor: Louis De Neve - edited to be vectorised and integrated into MRIO pipeline Nov 2025
 """
+
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -41,7 +42,7 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
 
     # load additional data and merge into wdf
     commodity_crosswalk = pd.read_csv(f"{datPath}/commodity_crosswalk.csv", index_col = 0)
-    wwf = data_utils.get_wwf_pbd(datPath)
+    wwf = get_wwf_pbd(datPath)
     Sm_wwf_items = pd.read_csv(f"{datPath}/schwarzmueller_wwf.csv",index_col = 0)
     wdf = (wdf
         .merge(Sm_wwf_items[["Item_Code_FAO", "WWF_cat"]], left_on="Item_Code", right_on="Item_Code_FAO", how="left")
@@ -140,7 +141,7 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     spam_years = [int(yr) for yr in spam_years]
     next_year = min([yr for yr in spam_years if yr >= year], default=max(spam_years))
     bd_path = os.path.join(datPath, "mapspam_outputs", "outputs", str(next_year), f"processed_results_{next_year}.csv")
-    print(bd_path)
+
     bd_opp_cost = pd.read_csv(bd_path)
     bd_opp_cost = bd_opp_cost[bd_opp_cost.band_name=="all"]
     bd_opp_cost.deltaE_mean *= -bd_opp_cost.sp_count
@@ -254,6 +255,6 @@ if __name__ == "__main__":
     for year in YEARS:
         for country in COUNTRIES:
             print(f"Processing {country} for year {year}...")
-            hc = pd.read_csv(f"results/{year}/{country}/human_consumed_no_sua.csv")
+            hc = pd.read_csv(f"results/{year}/{country}/human_consumed.csv")
             get_impacts(hc, year, country, "human_consumed_impacts_wErr.csv")
 

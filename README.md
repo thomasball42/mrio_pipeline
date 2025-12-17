@@ -18,11 +18,10 @@ Please cite appropriately when using this code.
 - `main.py` - Main execution script (equivalent to `_Execute.R`)
 
 ### Core Modules
-- `calculate_trade_matrix.py` - Calculates apparent consumption and trade links (equivalent to `Calculating_Trade_Matrix.R`)
-- `animal_products_to_feed.py` - Converts animal products into embedded feed items (equivalent to `animal_products_to_feed.R`)
-- `calculate_area.py` - Converts traded tons into areas (equivalent to `calculate_area.R`)
-- `unzip_data.py` - Utility for unzipping FAOSTAT data (equivalent to `Unzip data.R`)
-- `provenance` - Modified version of [LIFE impact code](https://github.com/thomasball42/food_LIFE)
+- `processing/unzip_data.py` - Utility for unzipping FAOSTAT data (equivalent to `Unzip data.R`)
+- `processing/calculate_trade_matrix.py` - Calculates apparent consumption and trade links (equivalent to `Calculating_Trade_Matrix.R`)
+- `processing/animal_products_to_feed.py` - Converts animal products into embedded feed items (equivalent to `animal_products_to_feed.R`)
+- `provenance/_provenance.py`, `provenance/_get_impacts_bd.py` and `provenance/_process_dat.py` - Modified version of [LIFE impact code](https://github.com/thomasball42/food_LIFE)
 
 ### Configuration
 - `requirements.txt` - Python package dependencies
@@ -45,7 +44,7 @@ Please cite appropriately when using this code.
 ## Usage
 
 ### Quick Start
-1. Download the FAOSTAT data files and place in the input_data directory
+1. If downloading from Github LFS takes too long, download the FAOSTAT data files and place in the input_data directory
     - [Production_Crops_Livestock_E_All_Data_(Normalized).zip](https://bulks-faostat.fao.org/production/Production_Crops_Livestock_E_All_Data_(Normalized).zip)
     - [FoodBalanceSheetsHistoric_E_All_Data_(Normalized).zip](https://bulks-faostat.fao.org/production/FoodBalanceSheetsHistoric_E_All_Data_(Normalized).zip)
     - [FoodBalanceSheets_E_All_Data_(Normalized).zip](https://bulks-faostat.fao.org/production/FoodBalanceSheets_E_All_Data_(Normalized).zip)
@@ -71,6 +70,11 @@ YEARS = list(range(1986, 2022))  # Limits: 1986-2022, default: 2013-2022
 
 #### Conversion Method
 Choose from the following nutritional conversion methods:
+
+```python
+conversion_opt = "dry_matter"
+```
+Available options:
 - `"dry_matter"` (default)
 - `"Energy"`
 - `"Protein"`
@@ -87,9 +91,6 @@ Choose from the following nutritional conversion methods:
 - `"Vit_K"`
 - `"Vit_A"`
 
-```python
-conversion_opt = "dry_matter"
-```
 
 #### Import/Export Preference
 Choose whether to prefer import or export data:
@@ -103,48 +104,44 @@ Control which parts of the pipeline to run:
 PIPELINE_COMPONENTS:list = [0]
 ```
 
+Component options:
+- `0` = Full pipeline (all components)
+- `1` = Unzipping data only
+- `2` = Trade matrix calculation
+- `3` = Animal products to feed calculation
+- `4` = Country-level impact calculations (as in [LIFE](https://github.com/thomasball42/food_LIFE))
+
 ### Countries
 Which countries to analyse in detail:
 ```python
 COUNTRIES = ["GBR"]
 ```
 
-Component options:
-- `0` = Full pipeline (all components)
-- `1` = Unzipping data only
-- `2` = Trade matrix calculation
-- `3` = Animal products to feed calculation
-- `4` = Area calculation (deprecated)
-- `5` = Country-level impact calculations (as in [LIFE](https://github.com/thomasball42/food_LIFE))
-
-
 ## Required Data Files
 
 The pipeline expects the following data files in the input_data directory:
 
-### FAOSTAT Data (download above)
-- `Production_Crops_Livestock_E_All_Data_(Normalized).zip`
-- `FoodBalanceSheetsHistoric_E_All_Data_(Normalized).zip`
-- `FoodBalanceSheets_E_All_Data_(Normalized).zip`
-- `Trade_DetailedTradeMatrix_E_All_Data_(Normalized).zip`
+### FAOSTAT Data (provided, or download above)
 - `CommodityBalances_(non-food)_(-2013_old_methodology)_E_All_Data_(Normalized).zip`
+- `FoodBalanceSheets_E_All_Data_(Normalized).zip`
+- `FoodBalanceSheetsHistoric_E_All_Data_(Normalized).zip`
+- `Production_Crops_Livestock_E_All_Data_(Normalized).zip`
 - `SUA_Crops_Livestock_E_All_Data_(Normalized).zip`
-### Mapping and Conversion Files (provided)
+- `Trade_DetailedTradeMatrix_E_All_Data_(Normalized).zip`
+### Mapping and Conversion Files (provided in `input_data`)
 - `CB_code_FAO_code_for_conversion_factors.csv`
 - `CB_items_split.csv`
 - `CB_to_primary_items_map.csv`
+- `commodity_crosswalk.csv`
+- `composition_old_vs_new.csv`
 - `content_factors_per_100g.xlsx`
 - `country_opp_cost_v6.csv`
-- `crop_db.csv`
-- `FAOSTAT_data_en_3-12-2024_calories.csv`
-- `FAOSTAT_data_en_3-12-2024_population.csv`
-- `FBS and SUA list.csv`
 - `nocsDataExport_20251021-164754.xlsx`
 - `Planet-Based Diets - Data and Viewer.xlsx`
 - `primary_item_map_feed.csv`
 - `Reporting_Dates.xls`
 - `schwarzmueller_wwf.csv`
-- `SUA_Crops_Livestock_E_ItemCodes.csv`
+- `SUA_Crops_Livestock_E_ItemCodes.csv` (also produced during unzip)
 - `tb_pasture_factors_2.csv`
 - `weighing_factors.csv`
 
@@ -154,10 +151,10 @@ For each processed year, the pipeline generates:
 
 - `results/{year}/.mrio/TradeMatrix_{conversion}_{year}.csv` - Main trade links for apparent consumption
 - `results/{year}/.mrio/TradeMatrixFeed_{conversion}_{year}.csv` - as above, broken down for feed
-- and all additional files as in https://github.com/thomasball42/food_LIFE
+- and all additional files as in https://github.com/thomasball42/food_LIFE (kdf.csv has been renamed impacts_aggregate.csv and xdf.csv have been renamed impacts_full.cav)
 
 
 ## Performance Notes
 
-- Processing time: ~40 minutes for all years (1986-2013) on a machine with 32GB RAM
+- Processing time: ~20 minutes for all years (1986-2013) on a machine with 32GB RAM
 - Recommended minimum 32GB RAM

@@ -1,13 +1,11 @@
-# -*- coding: utf-8 -*-
 """
-Created on Mon Jul 25 16:55:34 2022
+Created on Fri Dec 12 2025
 
-@author: Thomas Ball
+@author: Louis De Neve - vectorised and integrated into MRIO pipeline Dec 2025
 """
+
 import pandas as pd
-import numpy as np
 import os
-import time
 from pathlib import Path
     
 
@@ -93,8 +91,8 @@ def main(year, country_of_interest, sua, historic="", results_dir=Path("./result
     human_consumed["Animal_Product_Code"] = ""
 
     country_savefile_path = results_dir / str(year) / country_of_interest
-    human_consumed.to_csv(f"{country_savefile_path}/human_consumed_no_sua.csv")
-    feed.to_csv(f"{country_savefile_path}/feed_no_sua.csv")
+    human_consumed.to_csv(f"{country_savefile_path}/human_consumed.csv")
+    feed.to_csv(f"{country_savefile_path}/feed.csv")
 
     return human_consumed, feed
 

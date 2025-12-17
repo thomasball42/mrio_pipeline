@@ -3,12 +3,17 @@
 This code is a translation/re-written python script of the original R code of the following publication:
 Schwarzmueller, F. & Kastner, T (2022), Agricultural trade and its impact on cropland use
 and the global loss of species' habitats. Sustainability Science, doi: 10.1007/s11625-022-01138-7
+(c) Florian Schwarzmueller, December 2021
+
+It is then combined with the food_LIFE codebase for impact assessment:
+Ball, T.S., Dales, M., Eyres, A. et al. Food impacts on species extinction risks can vary by three orders of magnitude.
+Nat Food 6, 848–856 (2025). doi: 10.1038/s43016-025-01224-w
 
 Please cite ;-)
-(c) Florian Schwarzmueller, December 2021
-Re-written in Python, October 2025 by Louis De Neve
 
-Added multiprocessing (country-level parallelism) October/December 2025
+This script was written in Python, October 2025 by Louis De Neve
+
+Added multiprocessing (country-level parallelism), October/December 2025 by Thomas Ball
 """
 
 import os
@@ -20,12 +25,10 @@ import multiprocessing
 from processing.unzip_data import unzip_data
 from processing.calculate_trade_matrix import calculate_trade_matrix
 from processing.animal_products_to_feed import animal_products_to_feed
-from processing.calculate_area import calculate_area
 
 from provenance._provenance import main as consumption_provenance_main
 from provenance._get_impacts_bd import get_impacts as get_impacts_main
 from provenance._process_dat import main as process_dat_main
-# from provenance.global_commodity_impacts import main as global_commodity_impacts_main
 
 from pandas import read_excel, read_csv
 
@@ -33,7 +36,6 @@ from pandas import read_excel, read_csv
 RESULTS_DIR = "./results"
 
 YEARS = list(range(2010, 2022))
-YEARS = [2013]
 
 # Select a conversion method
 CONVERSION_OPTION = "dry_matter"
@@ -47,16 +49,13 @@ WORKING_DIR = '.'
 N_PROCESSES = 8
 
 # Pipeline components to run
-# 0 = all, 1 = unzip, 2 = trade matrix, 3 = animal products to feed, 4 = area calculation, 5 = country impacts
-PIPELINE_COMPONENTS: list = [2]
+# 0 = all, 1 = unzip, 2 = trade matrix, 3 = animal products to feed, 4 = country impacts
+PIPELINE_COMPONENTS: list = [0]
 
 cdat = read_excel("input_data/nocsDataExport_20251021-164754.xlsx")
 COUNTRIES = [_.upper() for _ in cdat["ISO3"].unique().tolist() if isinstance(_, str)]
 COUNTRIES = ["USA", "IND", "BRA", "JPN", "UGA", "GBR"]
-# COUNTRIES = ["GBR"]
 
-# globals for workers
-_HIST = None
 
 
 def _process_country(country: str, year: int, hist: str):
@@ -105,8 +104,7 @@ def main(years=list(range(1986, 2022)),
         1: "Unzipping data",
         2: "Trade matrix calculation",
         3: "Animal products to feed calculation",
-        4: "Area calculation",
-        5: "Country-level provenance calculations",
+        4: "Country-level provenance calculations",
     }
 
     print(f"""\nStarting MRIO calculations with options:
@@ -173,42 +171,27 @@ def main(years=list(range(1986, 2022)),
                 results_dir=results_dir)
 
         if (0 in pipeline_components) or (4 in pipeline_components):
-            if 4 in pipeline_components:
-                print("    MRIO area calculation is deprecated")
-            else:
-                print("    MRIO complete")
-
-            # calculate_area(
-            #     prefer_import=PREFER_IMPORT,
-            #     conversion_opt=CONVERSION_OPTION,
-            #     year=year)
-
-        if (0 in pipeline_components) or (5 in pipeline_components):
             print("    Processing country-level provenance and impacts...")
             missing_items = []
 
-            if hist == "Historic":
-                sua_path = "./input_data/FoodBalanceSheetsHistoric_E_All_Data_(Normalized).csv"
-            else:
-                sua_path = "./input_data/SUA_Crops_Livestock_E_All_Data_(Normalized).csv"
 
             if len(countries) <= 1 or n_processes == 1:
 
                 for country in countries:
-                    # try:
-                    print(f"    Processing country: {country}")
-                    t0 = time.perf_counter()
-                    cons, feed = consumption_provenance_main(year, country, hist, results_dir=results_dir)
-                    if len(cons) == 0:
-                        continue
-                    bf = get_impacts_main(feed, year, country, "feed_impacts_wErr.csv", results_dir=results_dir)
-                    bh = get_impacts_main(cons, year, country, "human_consumed_impacts_wErr.csv", results_dir=results_dir)
-                    mi = process_dat_main(year, country, bh, bf, results_dir=results_dir)
-                    missing_items.extend(mi)
-                    t1 = time.perf_counter()
-                    print(f"         Completed in {t1 - t0:.2f} seconds")
-                    # except Exception as e:
-                    #     print(f"Error processing {country}: {e}")
+                    try:
+                        print(f"    Processing country: {country}")
+                        t0 = time.perf_counter()
+                        cons, feed = consumption_provenance_main(year, country, hist, results_dir=results_dir)
+                        if len(cons) == 0:
+                            continue
+                        bf = get_impacts_main(feed, year, country, "feed_impacts_wErr.csv", results_dir=results_dir)
+                        bh = get_impacts_main(cons, year, country, "human_consumed_impacts_wErr.csv", results_dir=results_dir)
+                        mi = process_dat_main(year, country, bh, bf, results_dir=results_dir)
+                        missing_items.extend(mi)
+                        t1 = time.perf_counter()
+                        print(f"         Completed in {t1 - t0:.2f} seconds")
+                    except Exception as e:
+                        print(f"Error processing {country}: {e}")
 
             else:
                 # Use a Pool of worker processes. Initialize each worker to load the SUA file once.
@@ -227,7 +210,6 @@ def main(years=list(range(1986, 2022)),
                     pool.close()
                     pool.join()
 
-            # missing_items_file = Path(f"./results/{year}/missing_items.txt")
             missing_items_file = results_dir / str(year) / "missing_items.txt"
 
             with open(missing_items_file, "w") as f:

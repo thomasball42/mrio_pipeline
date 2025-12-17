@@ -1,3 +1,9 @@
+"""
+Created on Mon Jul 25 16:55:34 2022
+
+@author: Thomas Ball
+@editor: Louis De Neve - edited to be vectorised and integrated into MRIO pipeline Nov 2025
+"""
 
 import pandas as pd
 import numpy as np

@@ -329,8 +329,8 @@ def calculate_trade_matrix(
     add_data = add_data.rename(columns={"Area_Code": "Producer_Country_Code"})
     add_data["Consumer_Country_Code"] = add_data["Producer_Country_Code"]
     add_data["Value_Error"] = 0
-    print(len(transformed_data[transformed_data.Producer_Country_Code == transformed_data.Consumer_Country_Code]), "diagonal elements in MRIO trade matrix")
-    print(len(transformed_data[(transformed_data.Producer_Country_Code == transformed_data.Consumer_Country_Code)&(transformed_data.Value_Error==0)]), "zero diagonal elements in MRIO trade matrix")
+    # print(len(transformed_data[transformed_data.Producer_Country_Code == transformed_data.Consumer_Country_Code]), "diagonal elements in MRIO trade matrix")
+    # print(len(transformed_data[(transformed_data.Producer_Country_Code == transformed_data.Consumer_Country_Code)&(transformed_data.Value_Error==0)]), "zero diagonal elements in MRIO trade matrix")
 
     transformed_data = transformed_data.rename(columns={"primary_item": "Item_Code", "Value_Sum": "Value"})
     transformed_data = pd.concat([transformed_data, add_data], ignore_index=True)
