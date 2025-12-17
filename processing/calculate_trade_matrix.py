@@ -48,7 +48,7 @@ def calculate_mrio_matrices(Z, p):
     
     return R_bar
 
-
+@jit(nopython=True)
 def calculate_naive_matrix(Z, p):
     summation_vector = np.ones(len(p))
     x = p + Z @ summation_vector
@@ -102,6 +102,13 @@ def mrio_model(item_code, year, p_data, prod_data):
     for _, row in production_data_subset.iterrows():
         i = country_dict[row["Area_Code"]]
         p[i] = row["Value"] # denoted p in Kastner 2011
+
+    sum_vector = np.ones(len(countries))
+    imports = Z @ sum_vector
+    exports = sum_vector @ Z
+    production_minimum = exports - imports
+    production_minimum[production_minimum < 0] = 0
+    p = np.where(p<production_minimum, production_minimum, p)
 
     R_bar = calculate_mrio_matrices(Z, p)
     R_error = calculate_naive_matrix(Z, p)
@@ -199,7 +206,6 @@ def calculate_trade_matrix(
     raw_trade_data = raw_trade_data[raw_trade_data["Year"] == year]
     sugar_processing = sugar_processing[sugar_processing["Year"] == year]
     production = production[production["Year"] == year]
-
 
     # Tweaks for slightly different files
     production_all = production[["Area_Code", "Area", "Item_Code", "Item", "Element_Code", "Element", "Year_Code", "Year", "Unit", "Value"]]

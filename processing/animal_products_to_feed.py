@@ -78,6 +78,14 @@ def animal_products_to_feed(prefer_import="import", conversion_opt="dry_matter",
     production_animals.rename(columns=lambda x: x.replace(" ", "_"), inplace=True)
     weighing_factors.rename(columns=lambda x: x.replace(" ", "_"), inplace=True)
 
+    # fix missing data from indian cattle - data from FAO: https://www.fao.org/faostat/en/#data/SCL
+    indian_cattle_prod = [998071.03, 989522.18, 980561.33, 971291.48, 960991.17, 931645.26, 913009.07, 899727.75, 901236.5, 915639.94, 915639.94, 915639.94, 915639.94, 915639.94]
+    production_animals.loc[(production_animals["Item_Code"]==867)&
+                           (production_animals["Area_Code"]==100)&
+                           (production_animals["Element_Code"]==5510)&
+                           (production_animals["Year"]>=2010), "Value"] = indian_cattle_prod
+
+
 
     production_animals = production_animals[(production_animals["Year"] == year) &
         (production_animals["Element_Code"] == 5510)]
