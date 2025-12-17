@@ -191,6 +191,9 @@ def calculate_trade_matrix(
     sugar_processing.rename(columns=lambda x: x.replace(" ", "_"), inplace=True)
     production.rename(columns=lambda x: x.replace(" ", "_"), inplace=True)
 
+    # fix missing data from indian cattle - data from FAO: https://www.fao.org/faostat/en/#data/SCL
+    indian_cattle_prod = [998071.03, 989522.18, 980561.33, 971291.48, 960991.17, 931645.26, 913009.07, 899727.75, 901236.5, 915639.94, 915639.94, 915639.94, 915639.94, 915639.94]
+    production.loc[(production["Item_Code"]==867)&(production["Area_Code"]==100)&(production["Element_Code"]==5510)&(production["Year"]>=2010), "Value"] = indian_cattle_prod
 
     # Select year
     raw_trade_data = raw_trade_data[raw_trade_data["Year"] == year]
@@ -213,7 +216,6 @@ def calculate_trade_matrix(
     # Combine and filter
     # production_all = pd.concat([production_all, production_offals], ignore_index=True)
     production_all = production_all[(production_all["Area_Code"]<300) & (production_all["Element_Code"]==5510)]
-
 
     # harmonise import and export data
 
@@ -432,3 +434,14 @@ def calculate_trade_matrix(
     output_data = output_data[["Consumer_Country_Code", "Producer_Country_Code", "Item_Code", "Year", "Value", "Error"]]
     output_data.to_csv(output_filename, index=False)
 
+if __name__ == "__main__":
+    import os
+    os.chdir("../")
+    # Example usage
+    calculate_trade_matrix(
+        conversion_opt="dry_matter",
+        prefer_import="import",
+        year=2013,
+        historic="",
+        results_dir=Path("./results")
+    )
