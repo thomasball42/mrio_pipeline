@@ -8,12 +8,23 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import os
+import sys
 
-try:
-    import provenance.data_utils as data_utils
-except ModuleNotFoundError:
-    import data_utils
-
+def get_wwf_pbd(datPath):
+    file_name = "Planet-Based Diets - Data and Viewer.xlsx"
+    sheet_name = "DATA - Product Level"
+    file_path = f"{datPath}/{file_name}"
+    if os.path.exists(file_path):
+        
+        with warnings.catch_warnings(): 
+            warnings.simplefilter("ignore")
+            df = pd.read_excel(file_path, sheet_name = sheet_name)
+        return df
+    else:
+        sys.exit(f"""Couldn't find {file_name} in {datPath}""")
+        return pd.DataFrame()
+    
+    
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
