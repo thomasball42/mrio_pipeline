@@ -473,6 +473,8 @@ FAO_code,FAO_name,primary_item,FAO_name_primary
 910,Ice cream and edible ice,882,"Milk, whole fresh cow"
 920,"Hides, cattle, wet salted",919,"Hides, cattle, fresh"
 928,"Skins, calve, wet salted",919,"Hides, cattle, fresh"
+947,"Meat, buffalo",947,"Meat, buffalo"
+951,"Milk, whole fresh buffalo",951,"Milk, whole fresh buffalo"
 953,"Ghee, of buffalo milk",951,"Milk, whole fresh buffalo"
 958,"Hides, buffalo, wet salted",957,"Hides, buffalo, fresh"
 959,"Hides, buffalo, dry salted",957,"Hides, buffalo, fresh"

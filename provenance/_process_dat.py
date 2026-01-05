@@ -22,7 +22,6 @@ def main(year, coi_iso, bh, bf, results_dir=Path("./results")):
         country_code_data = pd.read_excel(f"{datPath}/nocsDataExport_20251021-164754.xlsx")
     coi = country_code_data.loc[country_code_data["ISO3"]==coi_iso]["FAOSTAT"].values[0]
 
-    bd_path = f"{datPath}/country_opp_cost_v6.csv"
     grouping = "group_name_v7"
     
     # coi = 229

@@ -137,6 +137,8 @@ Karite nuts (sheanuts),263,40,temperate fruit,temf,frt,,Fruit_and_nuts,"Legumes,
 Bambara beans,203,21,groundnut,grou,nes,,Fruit_and_nuts,"Legumes, nuts, and seeds",,"Other legumes, nuts, and seeds","Legumes, nuts, and seeds","Legumes, nuts, and seeds",Other,Other,"Legumes, beans, nuts",,GROU,GROU,GROU
 Meat; cattle,867,-99,ruminant meat,past,beef,Ruminant,,Ruminant meat,bvmeat,Cattle meat,Ruminant meat,,Ruminant meat,Ruminant meat,Ruminant meat,,CATTL,CATTL,CATTL
 Milk; whole fresh cow,882,-99,dairy,past,dairy,Ruminant,,Dairy,bvmilk,Dairy,Dairy,,Dairy,Dairy,Dairy and eggs,,CATTL,CATTL,CATTL
+Meat; buffalo,947,,,,,,,,bvmeat,,,,,,Ruminant meat,,BUFFA,BUFFA,BUFFA
+Milk; whole fresh buffalo,951,,,,,,,,bvmilk,,,,,,Dairy and eggs,,BUFFA,BUFFA,BUFFA
 Meat; sheep,977,-99,ruminant meat,past,sheep,Ruminant,,Ruminant meat,sgmeat,Sheep and goat meat,Ruminant meat,,Ruminant meat,Ruminant meat,Ruminant meat,,SHEEP,SHEEP,SHEEP
 Meat; goat,1017,-99,ruminant meat,past,sheep,Ruminant,,Ruminant meat,sgmeat,Sheep and goat meat,Ruminant meat,,Ruminant meat,Ruminant meat,Ruminant meat,,GOATS,GOATS,GOATS
 Meat; pig,1035,-99,meat,past,pig,Monogastric,,Pig meat,pigs,Pig meat,Pig meat,,Pig meat,Pig meat,Poultry and pig meat,,SWINE,SWINE,SWINE
@@ -147,7 +149,7 @@ Meat; goose and guinea fowl,1073,-99,meat,past,poultry,Monogastric,,Poultry meat
 Meat; turkey,1080,-99,meat,past,poultry,Monogastric,,Poultry meat,chickens,Poultry meat,Poultry meat,,Poultry meat,Poultry meat,Poultry and pig meat,,CHICK,CHICK,CHICK
 Eggs; other bird; in shell,1091,-99,eggs,past,egg,Monogastric,,Eggs,ducks,Eggs,Eggs,,Eggs,Eggs,Dairy and eggs,,DUCKS,DUCKS,DUCKS
 Meat; horse,1097,-99,meat,past,,Ruminant,,Ruminant meat,past,Other ruminant meat,Ruminant meat,,Ruminant meat,Ruminant meat,Ruminant meat,,HORSE,HORSE,HORSE
-Meat; rabbit,1141,-99,meat,past,,Monogastric,,,sgmeat,,,,,,,,SHEEP,SHEEP,SHEEP
+Meat; rabbit,1141,-99,meat,past,,Monogastric,,,sgmeat,,,,,,Ruminant meat,,SHEEP,SHEEP,SHEEP
 Meat nes,1166,-99,meat,past,,Ruminant,,Ruminant meat,past,Other ruminant meat,Ruminant meat,,Ruminant meat,Ruminant meat,Ruminant meat,,HORSE,HORSE,HORSE
 Cotton,,,,,,,,,,,,,,,,,COTT,COTT,COTT
 Rubber,,,,,,,,,,,,,,,,,,,RUBB

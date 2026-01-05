@@ -213,7 +213,7 @@ def main(years=list(range(1986, 2022)),
             missing_items_file = results_dir / str(year) / "missing_items.txt"
 
             with open(missing_items_file, "w") as f:
-                f.write("Missing items and their codes:\n")
+                f.write("Items missing from crosswalk and their codes:\n")
 
                 for item, code in set(missing_items):
                     f.write(f" - {item}: {code}\n")
