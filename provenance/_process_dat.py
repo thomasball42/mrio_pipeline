@@ -31,7 +31,8 @@ def main(year, coi_iso, bh, bf, results_dir=Path("./results")):
     # bh = pd.read_csv(f"{scenPath}/human_consumed_impacts_wErr.csv", index_col = 0)
     # bf = pd.read_csv(f"{scenPath}/feed_impacts_wErr.csv", index_col = 0)
     # print(bf)
-
+    bh = bh.copy()
+    bf = bf.copy()
     bf["bd_opp_cost_calc"] = bf["bd_opp_cost_calc"].mask(bf["bd_opp_cost_calc"].lt(0),0)
     
     bh = bh[np.logical_not(np.isinf(bh.FAO_land_calc_m2))]
