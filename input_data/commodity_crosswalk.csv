@@ -150,6 +150,6 @@ Meat; turkey,1080,-99,meat,past,poultry,Monogastric,,Poultry meat,chickens,Poult
 Eggs; other bird; in shell,1091,-99,eggs,past,egg,Monogastric,,Eggs,ducks,Eggs,Eggs,,Eggs,Eggs,Dairy and eggs,,DUCKS,DUCKS,DUCKS
 Meat; horse,1097,-99,meat,past,,Ruminant,,Ruminant meat,past,Other ruminant meat,Ruminant meat,,Ruminant meat,Ruminant meat,Ruminant meat,,HORSE,HORSE,HORSE
 Meat; rabbit,1141,-99,meat,past,,Monogastric,,,sgmeat,,,,,,Ruminant meat,,SHEEP,SHEEP,SHEEP
-Meat nes,1166,-99,meat,past,,Ruminant,,Ruminant meat,past,Other ruminant meat,Ruminant meat,,Ruminant meat,Ruminant meat,Ruminant meat,,HORSE,HORSE,HORSE
+Meat nes,1166,-99,meat,past,,Ruminant,,Ruminant meat,past,Other ruminant meat,Ruminant meat,,Ruminant meat,Ruminant meat,Ruminant meat,,CATTL,CATTL,CATTL
 Cotton,,,,,,,,,,,,,,,,,COTT,COTT,COTT
 Rubber,,,,,,,,,,,,,,,,,,,RUBB
