@@ -98,7 +98,7 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
             'Raw milk of buffalo' : "bvmilk",
             }  
         rums_df = pd.DataFrame.from_dict(rums, orient='index', columns=['livestock'])
-        tb_pasture_vals = pd.read_csv(f"{datPath}/tb_pasture_factors_2.csv", index_col = 0)[["livestock", "fp_m2_kg", "Country_ISO"]]
+        tb_pasture_vals = pd.read_csv(f"{datPath}/tb_pasture_factors_2.csv", index_col = 0)[["livestock", "fp_m2_kg", "fp_m2_kg_perc", "Country_ISO"]]
         global_median_tb = {v: tb_pasture_vals[tb_pasture_vals["livestock"]==v]["fp_m2_kg"].median() for v in set(rums.values())}
         global_median_tb_df = pd.DataFrame.from_dict(global_median_tb, orient='index', columns=['global_median_fp_m2_kg'])
 
@@ -106,6 +106,8 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
         wdf = wdf.merge(tb_pasture_vals, how="left", left_on=["Country_ISO", "livestock"], right_on=["Country_ISO", "livestock"])
         wdf = wdf.merge(global_median_tb_df, how="left", left_on=["livestock"], right_index=True)
         wdf["Pasture_avg"] = wdf[["Pasture_avg","fp_m2_kg", "global_median_fp_m2_kg"]].min(axis=1)
+        wdf["tb_pasture_err"] = 0
+        wdf.loc[wdf["fp_m2_kg"] == wdf["Pasture_avg"], "tb_pasture_err"] = wdf.loc[wdf["fp_m2_kg"] == wdf["Pasture_avg"], "fp_m2_kg_perc"]
         wdf = wdf.drop(columns=["fp_m2_kg", "global_median_fp_m2_kg", "livestock"])
 
     # set non-applicable values to zero
@@ -132,7 +134,11 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     wdf["FAO_land_calc_m2_err"] = wdf["FAO_land_calc_m2"] * wdf["err"]
     wdf["SWWU_avg_calc_err"] = wdf["SWWU_avg_calc"] * wdf["err"]
     wdf["GHG_avg_calc_err"] = wdf["GHG_avg_calc"] * wdf["err"]
-    wdf["Pasture_avg_calc_err"] = wdf["Pasture_avg_calc"] * wdf["err"]
+    if filename[:4] != "feed":
+        wdf["Pasture_avg_calc_err"] = np.sqrt(wdf["err"]**2 + wdf["tb_pasture_err"]**2) * wdf["Pasture_avg_calc"]
+        wdf = wdf.drop(columns=["tb_pasture_err"])
+    else:
+        wdf["Pasture_avg_calc_err"] = wdf["Pasture_avg_calc"] * wdf["err"]
     wdf = wdf.drop(columns=["err"])
 
     # biodiversity opportunity cost
