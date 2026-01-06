@@ -513,7 +513,6 @@ FAO_code,FAO_name,primary_item,FAO_name_primary
 1129,"Fat, camels",1127,"Meat, camel"
 1141,"Meat, rabbit",1141,"Meat, rabbit"
 1163,"Meat, game",1163,"Meat, game"
-1164,"Meat, dried nes",1166,"Meat, nes"
 1166,"Meat, nes",1166,"Meat, nes"
 1168,"Oils, fats of animal nes",1166,"Meat, nes"
 1182,"Honey, natural",1182,"Honey, natural"
@@ -547,6 +546,7 @@ FAO_code,FAO_name,primary_item,FAO_name_primary
 1074,"Offals, liver geese",2736,"Offals, edible"
 1075,"Offals, liver duck",2736,"Offals, edible"
 1159,"Offals, other camelids",2736,"Offals, edible"
+1164,"Other meat and edible meat offal, salted, in brine, dried or smoked; edible flours and meals of meat or meat offal",2376,"Meat, nes"
 2736,"Offals, edible",2736,"Offals, edible"
 565,Vermouths &amp,560,Grapes
 665,"Cocoa, powder &amp",661,"Cocoa, beans"
