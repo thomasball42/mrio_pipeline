@@ -29,6 +29,10 @@ def get_wwf_pbd(datPath):
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
+def find_closest_spam_year(year, spam_years):
+    distance = min([np.abs(yr-year) for yr in spam_years])
+    next_year = [year + distance * i for i in [-1, 1] if year + distance * i in spam_years][0]
+    return next_year
 
 def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     # setup
@@ -141,8 +145,8 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     # bd_opp_cost = bd_opp_cost[bd_opp_cost.band_name=="all"]
     spam_years = os.listdir(os.path.join(datPath, "mapspam_outputs", "outputs"))
     spam_years = [int(yr) for yr in spam_years]
-    next_year = min([yr for yr in spam_years if yr >= year], default=max(spam_years))
-    bd_path = os.path.join(datPath, "mapspam_outputs", "outputs", str(next_year), f"processed_results_{next_year}.csv")
+    spam_yr = find_closest_spam_year(year, spam_years)
+    bd_path = os.path.join(datPath, "mapspam_outputs", "outputs", str(spam_yr), f"processed_results_{spam_yr}.csv")
 
     bd_opp_cost = pd.read_csv(bd_path)
     bd_opp_cost = bd_opp_cost[bd_opp_cost.band_name=="all"]
@@ -178,8 +182,8 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
 
 
     # get spam_name to merge with life data
-    wdf = wdf.merge(commodity_crosswalk[["Item_Code", f"spam_{next_year}"]], on="Item_Code", how="left")
-    wdf = wdf.rename(columns={f"spam_{next_year}":"spam_name"})
+    wdf = wdf.merge(commodity_crosswalk[["Item_Code", f"spam_{spam_yr}"]], on="Item_Code", how="left")
+    wdf = wdf.rename(columns={f"spam_{spam_yr}":"spam_name"})
 
 
     # merge in life data
