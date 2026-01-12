@@ -42,7 +42,7 @@ master_df_imports = pd.DataFrame()
 results_dir = "../results/"
 for year in os.listdir(results_dir):
     for country in os.listdir(f"{results_dir}{year}"):
-        if country == ".mrio" or country == "missing_items.txt" or country == "UGA":
+        if country == ".mrio" or country == "missing_items.txt" or country == "AUS":
             continue
 
         df1 = pd.read_csv(f"{results_dir}{year}/{country}/df_{country.lower()}.csv", index_col=0)
