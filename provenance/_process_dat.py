@@ -161,7 +161,7 @@ def main(year, coi_iso, bh, bf, results_dir=Path("./results")):
         kdf.columns = [_ if _ != "level_0" else "Item" for _ in kdf.columns]
     
     for item in kdf.Item.unique():
-        kdf.loc[kdf.Item==item, "primary_tonnage"] = xdf[xdf.Item==item].provenance.sum()
+        kdf.loc[kdf.Item==item, "primary_tonnage"] = xdf[(xdf.Item==item)&(xdf.ItemT_Name.isin([item, "Primary"]))].provenance.sum()
         
     kdf.to_csv(f"{scenPath}/impacts_aggregated.csv")
         
