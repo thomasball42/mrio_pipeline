@@ -88,12 +88,12 @@ axs = axs.flatten()
 for i, country in enumerate(master_df_local["Country"].unique()):
     country_df_local = master_df_local[master_df_local["Country"] == country]
     plot = so.Plot(country_df_local, x="Year", y="bd_opp_total", color="Group").add(so.Area(alpha=1), so.Stack(), legend=False)
-    plot = plot.scale(color=color_dict)
+    plot = plot.scale(color=color_dict) # pyright: ignore[reportArgumentType]
     plot.on(axs[i]).plot()
 
     country_df_imports = master_df_imports[master_df_imports["Country"] == country]
     plot = so.Plot(country_df_imports, x="Year", y="bd_opp_total", color="Group").add(so.Area(alpha=1), so.Stack(), legend=False)
-    plot = plot.scale(color=color_dict)
+    plot = plot.scale(color=color_dict) # pyright: ignore[reportArgumentType]
     plot.on(axs[i]).plot()
 
     y = np.abs(axs[i].get_ylim()).max()
