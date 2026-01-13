@@ -11,6 +11,11 @@ import numpy as np
 import os
 import sys
 
+try:
+    import _get_biodiversity_vals
+except ImportError:
+    import provenance._get_biodiversity_vals as _get_biodiversity_vals
+
 def get_wwf_pbd(datPath):
     file_name = "Planet-Based Diets - Data and Viewer.xlsx"
     sheet_name = "DATA - Product Level"
@@ -28,11 +33,6 @@ def get_wwf_pbd(datPath):
     
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
-
-def find_closest_spam_year(year, spam_years):
-    distance = min([np.abs(yr-year) for yr in spam_years])
-    next_year = [year + distance * i for i in [-1, 1] if year + distance * i in spam_years][0]
-    return next_year
 
 def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     # setup
@@ -141,14 +141,13 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
 
     # biodiversity opportunity cost
     # bd_path = f"{datPath}/LIFE_results_SPAM_2020.csv"
-
     # bd_opp_cost = bd_opp_cost[bd_opp_cost.band_name=="all"]
-    spam_years = os.listdir(os.path.join(datPath, "mapspam_outputs", "outputs"))
-    spam_years = [int(yr) for yr in spam_years]
-    spam_yr = find_closest_spam_year(year, spam_years)
-    bd_path = os.path.join(datPath, "mapspam_outputs", "outputs", str(spam_yr), f"processed_results_{spam_yr}.csv")
+
+    # bd_path = os.path.join(datPath, "mapspam_outputs", "outputs", str(spam_yr), f"processed_results_{spam_yr}.csv")#
+    bd_path, spam_yr = _get_biodiversity_vals.fetch_biodiversity_vals_path(year, datPath)
 
     bd_opp_cost = pd.read_csv(bd_path)
+
     bd_opp_cost = bd_opp_cost[bd_opp_cost.band_name=="all"]
     bd_opp_cost.deltaE_mean *= -bd_opp_cost.sp_count
     bd_opp_cost.deltaE_mean_sem *= bd_opp_cost.sp_count
@@ -179,7 +178,6 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
         err = np.exp(np.log(subset2).mean())
         global_bd_opp_cost.loc[v, "opp_cost_val_fallback"] = mean
         global_bd_opp_cost.loc[v, "opp_cost_err_fallback"] = err
-
 
     # get spam_name to merge with life data
     wdf = wdf.merge(commodity_crosswalk[["Item_Code", f"spam_{spam_yr}"]], on="Item_Code", how="left")
