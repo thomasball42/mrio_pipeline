@@ -93,24 +93,15 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
 
     # Pasture calcs (only runs if not feed calc)
     if filename[:4] != "feed":
-        rums = {"Meat of cattle boneless; fresh or chilled" : "bvmeat",
-            "Meat of cattle with the bone; fresh or chilled" : "bvmeat",
-            'Meat of sheep; fresh or chilled' : "sgmeat",
-            'Meat of buffalo; fresh or chilled' : "bvmeat",
-            'Meat of goat; fresh or chilled' : "sgmeat",
-            'Raw milk of cattle' : "bvmilk",
-            'Raw milk of buffalo' : "bvmilk",
-            }  
-        rums_df = pd.DataFrame.from_dict(rums, orient='index', columns=['livestock'])
-        tb_pasture_vals = pd.read_csv(f"{datPath}/tb_pasture_factors_2.csv", index_col = 0)[["livestock", "fp_m2_kg", "fp_m2_kg_perc", "Country_ISO"]]
-        global_median_tb = {v: tb_pasture_vals[tb_pasture_vals["livestock"]==v]["fp_m2_kg"].median() for v in set(rums.values())}
+        rums = [867, 882, 947, 951, 977, 982, 1017, 1020, 1097]
+        tb_pasture_vals = pd.read_csv(f"{results_dir}/{year}/.mrio/Pasture_calc.csv")[["Item_Code", "fp_m2_kg", "fp_m2_kg_perc", "Country_ISO"]]
+        global_median_tb = {v: tb_pasture_vals[tb_pasture_vals["Item_Code"]==v]["fp_m2_kg"].median() for v in rums}
         global_median_tb_df = pd.DataFrame.from_dict(global_median_tb, orient='index', columns=['global_median_fp_m2_kg'])
 
-        wdf = wdf.merge(rums_df, how="left", left_on="Item", right_index=True)
-        wdf = wdf.merge(tb_pasture_vals, how="left", left_on=["Country_ISO", "livestock"], right_on=["Country_ISO", "livestock"])
-        wdf = wdf.merge(global_median_tb_df, how="left", left_on=["livestock"], right_index=True)
+        wdf = wdf.merge(tb_pasture_vals, how="left", on=["Country_ISO", "Item_Code"])
+        wdf = wdf.merge(global_median_tb_df, how="left", left_on=["Item_Code"], right_index=True)
         wdf["Pasture_avg"] = wdf[["Pasture_avg","fp_m2_kg", "global_median_fp_m2_kg"]].min(axis=1)
-        wdf = wdf.drop(columns=["fp_m2_kg", "global_median_fp_m2_kg", "livestock"])
+        wdf = wdf.drop(columns=["fp_m2_kg", "global_median_fp_m2_kg"])
 
     # set non-applicable values to zero
     wdf.loc[wdf.Animal_Product == "Primary", "Arable_avg"] = 0

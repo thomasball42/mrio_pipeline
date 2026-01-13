@@ -309,38 +309,34 @@ def animal_products_to_feed(prefer_import="import", conversion_opt="dry_matter",
     #     output_data.to_csv(f"{output_filename[:-4]}_temp.csv", index=False)
 
     output_data.to_csv(output_filename, index=False)
-
     pasture_items = [867, 882, 947, 951, 977, 982, 1017, 1020, 1097]
+    bvmeat = 25
+    bvmilk = 0.7
+    sgmeat = 15
+    weighing_factors = [bvmeat, bvmilk, bvmeat, bvmilk, sgmeat, bvmilk, sgmeat, bvmilk, sgmeat]
+    weighing_factors = pd.DataFrame({"Item_Code": pasture_items, "Weighing_factors": weighing_factors})
+
+    # p_i calculation
     pasture_trade = animal_trade_data[animal_trade_data["Item_Code"].isin(pasture_items)].copy()
     productions = pasture_trade.groupby(["Item_Code", "Producer_Country_Code"])[["Value", "Error"]].sum().reset_index()
     productions = productions.rename(columns={"Producer_Country_Code":"Country_Code"})
-    feeds = output_data[output_data["Animal_Product_Code"].isin(pasture_items)].copy()
-    feeds = feeds.groupby(["Animal_Product_Code", "Consumer_Country_Code"])[["Value", "Error"]].sum().reset_index()
-    feeds = feeds.merge(weighing_factors[["Item_Code", "Weighing_factors"]], left_on="Animal_Product_Code", right_on="Item_Code", how="left")
-    feeds["Meat_Equivalent"] = feeds.Value / feeds.Weighing_factors
-    feeds["Meat_Equivalent_Error"] = feeds["Error"] / feeds["Weighing_factors"]
-    feeds = feeds.drop(columns=["Item_Code", "Value", "Error"])
-    feeds = feeds.rename(columns={"Animal_Product_Code":"Item_Code" , "Consumer_Country_Code":"Country_Code"})
-    productions = productions.merge(feeds, on=["Country_Code", "Item_Code"], how="left")
+    productions = productions.merge(weighing_factors[["Item_Code", "Weighing_factors"]], on="Item_Code", how="left")
+    productions["Value"] *= 1e3  # convert from tons to kg
+    productions["Error"] *= 1e3  # convert from tons to kg
+    productions["Pasture_Percent_Error"] = productions["Error"] / productions["Value"]
 
-    productions["Pasture_mass_requirement"] = productions["Value"] - productions["Meat_Equivalent"]
-    productions["Pasture_mass_requirement_error"] = productions["Error"] + productions["Meat_Equivalent_Error"]
-    productions.loc[productions["Pasture_mass_requirement"] < 0, "Pasture_mass_requirement"] = 0
-
+    # g_rat calculation
     mass_requirements = productions[["Item_Code", "Country_Code", "Value", "Weighing_factors"]].copy()
     mass_requirements["Mass_Requirement"] = mass_requirements["Value"] * mass_requirements["Weighing_factors"]
     mass_requirements = mass_requirements.drop(columns=["Value", "Weighing_factors"])
     mass_requirements_total = mass_requirements.groupby(["Country_Code"]).sum().reset_index().drop(columns=["Item_Code"])
     mass_requirements = mass_requirements.merge(mass_requirements_total, on="Country_Code", suffixes=("", "_Total"))
     mass_requirements["Area_Share"] = mass_requirements["Mass_Requirement"] / mass_requirements["Mass_Requirement_Total"]
-    # replace P - c/alpha with F- sum(Palpha) # TODO
     productions = productions.merge(mass_requirements[["Item_Code", "Country_Code", "Area_Share"]], on=["Item_Code", "Country_Code"], how="left")
-    pd.set_option('display.max_columns', 10)
-    print(productions[productions["Country_Code"]==1])
-    productions = productions[["Item_Code", "Country_Code", "Pasture_mass_requirement", "Pasture_mass_requirement_error", "Area_Share"]]
+    productions = productions[["Item_Code", "Country_Code", "Area_Share", "Pasture_Percent_Error", "Value"]]
 
-    areas = pd.read_csv("input_data/Inputs_LandUse_E_All_Data_NOFLAG.csv", encoding="Latin-1")
-
+    # Pasture area calculation
+    areas = pd.read_csv("input_data/Inputs_LandUse_E_All_Data.csv", encoding="Latin-1")
     areas = areas[(areas["Item Code"]==6655)&(areas["Element Code"]==5110)][["Area Code", f"Y{year}"]]
     areas[f"Y{year}"] *= 1e7  # convert from 1000 ha to m2
     areas = areas.rename(columns={f"Y{year}":"Total_Pasture_Area_m2", "Area Code":"Country_Code"})
@@ -348,10 +344,8 @@ def animal_products_to_feed(prefer_import="import", conversion_opt="dry_matter",
     productions = productions.merge(areas, on="Country_Code", how="left")
     productions["Total_Pasture_Area_m2"] = productions["Total_Pasture_Area_m2"].fillna(0)
     productions["Pasture_Area_m2"] = productions["Total_Pasture_Area_m2"] * productions["Area_Share"]
-
-    productions["Pasture_Efficiency_m2_per_kg"] = productions["Pasture_Area_m2"] / productions["Pasture_mass_requirement"]
-    productions["Pasture_Efficiency_err"] = productions["Pasture_mass_requirement_error"] / productions["Pasture_mass_requirement"]
-    productions = productions[["Item_Code", "Country_Code", "Pasture_Efficiency_m2_per_kg", "Pasture_Efficiency_err"]]
+    productions = productions[["Item_Code", "Country_Code", "Pasture_Area_m2", "Pasture_Percent_Error", "Value", "Area_Share"]]
+    productions["Pasture_Efficiency_m2_per_kg"] = productions["Pasture_Area_m2"] / productions["Value"]
 
     import warnings
     with warnings.catch_warnings():
@@ -359,11 +353,10 @@ def animal_products_to_feed(prefer_import="import", conversion_opt="dry_matter",
         area_codes = pd.read_excel(f"input_data/nocsDataExport_20251021-164754.xlsx", engine="openpyxl")  
         area_codes = area_codes[["ISO3", "FAOSTAT"]].rename(columns={"ISO3":"Country_ISO", "FAOSTAT":"Country_Code"})
     productions = productions.merge(area_codes, on="Country_Code", how="left")
-    productions = productions.rename(columns={"Pasture_Efficiency_m2_per_kg": "fp_m2_kg", "Pasture_Efficiency_err": "fp_m2_kg_perc"})
-    productions = productions[["Item_Code", "Country_ISO", "fp_m2_kg", "fp_m2_kg_perc"]]
+    productions = productions.rename(columns={"Pasture_Efficiency_m2_per_kg": "fp_m2_kg", "Pasture_Percent_Error": "fp_m2_kg_perc", "Area_Share": "g_rat"})
+    productions = productions[["Item_Code", "Country_ISO", "fp_m2_kg", "fp_m2_kg_perc", "g_rat"]]
 
-    output_filepath = results_dir / str(year) / ".mrio" / f"Pasture_efficiencies_calculated.csv"
-
+    output_filepath = results_dir / str(year) / ".mrio" / f"Pasture_calc.csv"
     productions.to_csv(output_filepath, index=False, encoding="Latin-1")
 
 
