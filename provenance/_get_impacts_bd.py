@@ -11,10 +11,7 @@ import numpy as np
 import os
 import sys
 
-try:
-    import _get_biodiversity_vals
-except ImportError:
-    import provenance._get_biodiversity_vals as _get_biodiversity_vals
+from provenance._get_biodiversity_vals import fetch_biodiversity_vals_path
 
 def get_wwf_pbd(datPath):
     file_name = "Planet-Based Diets - Data and Viewer.xlsx"
@@ -135,7 +132,7 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
     # bd_opp_cost = bd_opp_cost[bd_opp_cost.band_name=="all"]
 
     # bd_path = os.path.join(datPath, "mapspam_outputs", "outputs", str(spam_yr), f"processed_results_{spam_yr}.csv")#
-    bd_path, spam_yr = _get_biodiversity_vals.fetch_biodiversity_vals_path(year, datPath)
+    bd_path, spam_yr = fetch_biodiversity_vals_path(year, datPath)
 
     bd_opp_cost = pd.read_csv(bd_path)
 

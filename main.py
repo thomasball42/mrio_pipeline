@@ -26,6 +26,7 @@ from processing.unzip_data import unzip_data
 from processing.calculate_trade_matrix import calculate_trade_matrix
 from processing.animal_products_to_feed import animal_products_to_feed
 
+from provenance._get_biodiversity_vals import fetch_biodiversity_vals_path
 from provenance._provenance import main as consumption_provenance_main
 from provenance._get_impacts_bd import get_impacts as get_impacts_main
 from provenance._process_dat import main as process_dat_main
@@ -173,7 +174,7 @@ def main(years=list(range(1986, 2022)),
         if (0 in pipeline_components) or (4 in pipeline_components):
             print("    Processing country-level provenance and impacts...")
             missing_items = []
-
+            fetch_biodiversity_vals_path(year, "./input_data")
 
             if len(countries) <= 1 or n_processes == 1:
 
