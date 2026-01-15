@@ -38,6 +38,7 @@ def main(year, country_of_interest, sua, historic="", results_dir=Path("./result
         area_codes = pd.read_excel(f"{datPath}/nocsDataExport_20251021-164754.xlsx", engine="openpyxl")  
     item_codes = pd.read_csv(f"{datPath}/SUA_Crops_Livestock_E_ItemCodes.csv", encoding = "latin-1", low_memory=False)
     country_code = area_codes[area_codes["ISO3"] == country_of_interest]["FAOSTAT"].values[0]
+    weighing_factors = pd.read_csv(f"{datPath}/weighing_factors.csv", encoding = "latin-1")
 
     prov_mat_no_feed = pd.read_csv(trade_nofeed)
     prov_mat_feed = pd.read_csv(trade_feed)
@@ -57,12 +58,13 @@ def main(year, country_of_interest, sua, historic="", results_dir=Path("./result
     human_consumed = pd.concat([alpha, gamma], ignore_index=True)
     human_consumed = human_consumed[human_consumed.Consumer_Country_Code == country_code]
 
-
-    totals = alpha.groupby(["Producer_Country_Code", "Item_Code"])["Value"].sum().reset_index()
-    totals["Total"] = totals["Value"]
-    totals = totals.drop(columns=["Value"])
+    alpha = alpha.merge(weighing_factors[["Item_Code", "Weighing factors"]], on="Item_Code", how="left")
+    alpha["Weighted_Value"] = alpha["Value"] * alpha["Weighing factors"]
+    totals = alpha.groupby(["Producer_Country_Code", "Item_Code"])["Weighted_Value"].sum().reset_index()
+    totals["Total"] = totals["Weighted_Value"]
+    totals = totals.drop(columns=["Weighted_Value"])
     alpha = alpha.merge(totals, on=["Producer_Country_Code", "Item_Code"], how="left")
-    alpha["Proportion"] = alpha["Value"] / alpha["Total"]
+    alpha["Proportion"] = alpha["Weighted_Value"] / alpha["Total"]
     alpha = alpha.drop(columns=["Total"])
 
 
