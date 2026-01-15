@@ -164,7 +164,9 @@ def main(year, coi_iso, bh, bf, results_dir=Path("./results")):
         kdf.loc[kdf.Item==item, "primary_tonnage"] = xdf[(xdf.Item==item)&(xdf.ItemT_Name.isin([item, "Primary"]))].provenance.sum()
         
     kdf.to_csv(f"{scenPath}/impacts_aggregated.csv")
-        
+    agg_impact_path = results_dir / "impacts" / str(year) / f"impacts_aggregated_{coi_iso}.csv"
+    os.makedirs(agg_impact_path.parent, exist_ok=True)
+    kdf.to_csv(agg_impact_path, index=False)
 
     food_commodity_impacts = kdf[["Item", "primary_tonnage", "ghg_total", "bd_opp_total", "bd_opp_total_err", "Scarcity_weighted_water_l"]].copy()
     food_commodity_impacts["kgCO2_per_kg"] = food_commodity_impacts.ghg_total / (food_commodity_impacts.primary_tonnage * 1000)
