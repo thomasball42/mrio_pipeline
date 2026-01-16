@@ -177,14 +177,14 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
 
     # fallback 1 (global item averages)
     wdf = wdf.merge(global_bd_opp_cost, how="left", left_on=["spam_name"], right_index=True)
-    wdf.loc[wdf.opp_cost_val.isna(), "opp_cost_val"] = wdf.loc[wdf.opp_cost_val.isna(), "opp_cost_val_fallback"]
-    wdf.loc[wdf.opp_cost_err.isna(), "opp_cost_err"] = wdf.loc[wdf.opp_cost_err.isna(), "opp_cost_err_fallback"]
+    wdf.loc[(wdf.opp_cost_val.isna())|(wdf.opp_cost_val==0), "opp_cost_val"] = wdf.loc[(wdf.opp_cost_val.isna())|(wdf.opp_cost_val==0), "opp_cost_val_fallback"]
+    wdf.loc[(wdf.opp_cost_err.isna())|(wdf.opp_cost_err==0), "opp_cost_err"] = wdf.loc[(wdf.opp_cost_err.isna())|(wdf.opp_cost_err==0), "opp_cost_err_fallback"]
 
 
 
     # fallback 2 (global type averages)
-    wdf.loc[(wdf.opp_cost_val.isna()), "opp_cost_val"] = oc_crop
-    wdf.loc[(wdf.opp_cost_err.isna()), "opp_cost_err"] = oc_crop_err
+    wdf.loc[(wdf.opp_cost_val.isna())|(wdf.opp_cost_val==0), "opp_cost_val"] = oc_crop
+    wdf.loc[(wdf.opp_cost_err.isna())|(wdf.opp_cost_err==0), "opp_cost_err"] = oc_crop_err
     wdf = wdf.drop(columns=["opp_cost_val_fallback", "opp_cost_err_fallback"])
 
     # convert opp cost from km2 to m2

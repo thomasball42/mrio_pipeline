@@ -39,6 +39,8 @@ pop_data["Value"] *= 1000  # convert to individuals
 master_df_local = pd.DataFrame()
 master_df_imports = pd.DataFrame()
 
+variable = "Cons"
+
 results_dir = "../results/"
 for year in os.listdir(results_dir):
     if year == "impacts":
@@ -48,26 +50,28 @@ for year in os.listdir(results_dir):
             continue
 
         df1 = pd.read_csv(f"{results_dir}{year}/{country}/df_{country.lower()}.csv", index_col=0)
-        df1 = df1[["Group", "bd_opp_total", "bd_opp_total_err"]]
+        df1 = df1[["Group", variable, "bd_opp_total", "bd_opp_total_err"]]
         df1 = df1.groupby(["Group"]).sum().reset_index()
         df1["Year"] = int(year)
         df1["Country"] = country
         df1 = df1.merge(area_codes, on="Country", how="left")
         df1 = df1.merge(pop_data, left_on=["FAO_Code", "Year"], right_on=["Area Code", "Year"], how="left")
-        df1["bd_opp_total"] /= (df1["Value"] * 365)  # per capita per day
+        df1[variable] /= (df1["Value"] * 365)  # per capita per day
+        df1["bd_opp_total"] /= (df1["Value"] * 365)
         df1["bd_opp_total_err"] /= (df1["Value"] * 365)
         df1 = df1.drop(columns=["FAO_Code", "Area Code", "Value"])
         master_df_local = pd.concat([master_df_local, df1], ignore_index=True)
 
         df2 = pd.read_csv(f"{results_dir}{year}/{country}/df_os.csv", index_col=0)
-        df2 = df2[["Group", "bd_opp_total", "bd_opp_total_err"]]
+        df2 = df2[["Group", variable, "bd_opp_total", "bd_opp_total_err"]]
         df2 = df2.groupby(["Group"]).sum().reset_index()
         df2["Year"] = int(year)
         df2["Country"] = country
         df2 = df2.merge(area_codes, on="Country", how="left")
         df2 = df2.merge(pop_data, left_on=["FAO_Code", "Year"], right_on=["Area Code", "Year"], how="left")
-        df2["bd_opp_total"] /= (df2["Value"] * 365)  # per capita per day
+        df2[variable] /= (df2["Value"] * 365)  # per capita per day
         df2["bd_opp_total_err"] /= (df2["Value"] * 365)
+        df2["bd_opp_total"] /= (df2["Value"] * 365)
         df2 = df2.drop(columns=["FAO_Code", "Area Code", "Value"])
         master_df_imports = pd.concat([master_df_imports, df2], ignore_index=True)
 
@@ -76,36 +80,48 @@ for year in os.listdir(results_dir):
 master_df_local = master_df_local.merge(order, on="Group")
 master_df_local = master_df_local.sort_values(["Country", "Year", "Order"])
 master_df_local = master_df_local.drop(columns=["Order"])
-master_df_local["bd_opp_total"] *= -1
-master_df_local["bd_opp_total_err"] *= -1
+
+groups = master_df_imports["Group"].unique()
 
 master_df_imports = master_df_imports.merge(order, on="Group")
 master_df_imports = master_df_imports.sort_values(["Country", "Year", "Order"])
 master_df_imports = master_df_imports.drop(columns=["Order"])
 
-fig, axs = plt.subplots(nrows=3, ncols=2)
-axs = axs.flatten()
+fig, axs = plt.subplots(figsize=(6, 8))
+country = "GBR"
+master_df_local = master_df_local[master_df_local["Country"] == country]
+master_df_imports = master_df_imports[master_df_imports["Country"] == country]
 
 
-for i, country in enumerate(master_df_local["Country"].unique()):
-    country_df_local = master_df_local[master_df_local["Country"] == country]
-    plot = so.Plot(country_df_local, x="Year", y="bd_opp_total", color="Group").add(so.Area(alpha=1), so.Stack(), legend=False)
-    plot = plot.scale(color=color_dict) # pyright: ignore[reportArgumentType]
-    plot.on(axs[i]).plot()
+variable2 = "Impact per kg"
+master_df_local[variable2] = master_df_local["bd_opp_total"] / master_df_local[variable]
+master_df_imports[variable2] = master_df_imports["bd_opp_total"] / master_df_imports[variable]
 
-    country_df_imports = master_df_imports[master_df_imports["Country"] == country]
-    plot = so.Plot(country_df_imports, x="Year", y="bd_opp_total", color="Group").add(so.Area(alpha=1), so.Stack(), legend=False)
-    plot = plot.scale(color=color_dict) # pyright: ignore[reportArgumentType]
-    plot.on(axs[i]).plot()
+for i, Group in enumerate(groups):
+    master_df_imports_group = master_df_imports[master_df_imports["Group"] == Group]
+    master_df_local_group = master_df_local[master_df_local["Group"] == Group]
 
-    y = np.abs(axs[i].get_ylim()).max()
-    axs[i].set_ylim(-y, y)
-    axs[i].set_title(country)
-    axs[i].set_xlim(master_df_local["Year"].min(), master_df_local["Year"].max())
-    axs[i].axhline(0, color="black", linewidth=0.8)
-    # axs[i].set_ylim(0, 5e-9)
+    try:
+        master_df_imports_group[variable2] = (master_df_imports_group[variable2] /
+                                                   master_df_imports_group.loc[master_df_imports_group.first_valid_index(), variable2] - 1)*100
+        plot = sns.lineplot(master_df_imports_group, x="Year", y=variable2, color=color_dict[Group], ax=axs, label=Group,)
+    except KeyError:
+        pass
+    try:
+        master_df_local_group[variable2] = (master_df_local_group[variable2] / 
+                                                 master_df_local_group.loc[master_df_local_group.first_valid_index(), variable2] - 1)*100
+        plot = sns.lineplot(master_df_local_group, x="Year", y=variable2, color=color_dict[Group], ax=axs, linestyle=":")
+    except KeyError:
+        pass
 
-for ax in axs[:-2]:
-    ax.set_xlabel("")
-    ax.set_xticklabels([])
+
+y = np.abs(axs.get_ylim()).max()
+axs.set_ylim(-100, 100)
+axs.set_xlim(master_df_local["Year"].min(), master_df_local["Year"].max())
+axs.axhline(0, color="black", linewidth=0.8)
+axs.set_ylabel("% Change since 2000")
+axs.set_title(f"Change in Impact per kg (%) since 2000 - {country}\nImports (solid) vs Local production (dashed)")
+# axs[i].set_ylim(0, 5e-9)
+
+
 plt.show()

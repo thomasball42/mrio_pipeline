@@ -5,6 +5,7 @@ processing/cotton_trade_matrix.py
 provenance/__pycache__/*
 __pycache__/*
 results/*
+outputs/*
 temp.txt
 temp.py
 input_data/deprecated/*
