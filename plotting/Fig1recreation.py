@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 results_dir = "../results"
-year=2013
+year=2021
 
 df = pd.DataFrame()
 commodity_crosswalk = pd.read_csv("../input_data/commodity_crosswalk.csv")
@@ -62,42 +62,98 @@ def invert_color(hex_color):
     
     return inverted_hex
 
-fao_prod = pd.read_csv(f"../input_data/Production_Crops_Livestock_E_All_Data_(Normalized).csv", encoding = "latin-1", low_memory=False)
-fao_prod = fao_prod[(fao_prod.Year == year)&(fao_prod["Element Code"]==5510)][["Area Code", "Item Code", "Value"]]
-fao_prod = fao_prod.rename(columns={"Area Code":"Country_Code", "Item Code":"Item_Code", "Value":"Cons"})
+def weighted_quantile(values, quantiles, sample_weight=None, 
+                      values_sorted=False, old_style=False):
+    
+    """ Very close to numpy.percentile, but supports weights.
+    NOTE: quantiles should be in [0, 1]!
+    :param values: numpy.array with data
+    :param quantiles: array-like with many quantiles needed
+    :param sample_weight: array-like of the same length as `array`
+    :param values_sorted: bool, if True, then will avoid sorting of
+        initial array
+    :param old_style: if True, will correct output to be consistent
+        with numpy.percentile.
+    :return: numpy.array with computed quantiles.
+    """
+    values = np.array(values)
+    quantiles = np.array(quantiles)
+    if sample_weight is None:
+        sample_weight = np.ones(len(values))
+    sample_weight = np.array(sample_weight)
+    assert np.all(quantiles >= 0) and np.all(quantiles <= 1), \
+        'quantiles should be in [0, 1]'
+
+    if not values_sorted:
+        sorter = np.argsort(values)
+        values = values[sorter]
+        sample_weight = sample_weight[sorter]
+
+    weighted_quantiles = np.cumsum(sample_weight) - 0.5 * sample_weight
+    
+    if old_style:
+        # To be convenient with numpy.percentile
+        weighted_quantiles -= weighted_quantiles[0]
+        weighted_quantiles /= weighted_quantiles[-1]
+    else:
+        weighted_quantiles /= np.sum(sample_weight)
+    return np.interp(quantiles, weighted_quantiles, values)
+
+
+for country_iso in os.listdir(f"{results_dir}/{year}"):
+    if len(country_iso) != 3 or not os.path.exists(f"{results_dir}/{year}/{country_iso}/df_{country_iso.lower()}.csv"):
+        continue
+    country_df = pd.read_csv(f"{results_dir}/{year}/{country_iso}/impacts_full.csv")[["Consumer_Country_Code", "Producer_Country_Code", "Animal_Product_Code", "ItemT_Code", "bd_opp_cost_calc", "provenance"]]
+    
+    country_df["Effective_Producer_Code"] = country_df["Consumer_Country_Code"]
+    country_df.loc[country_df.Animal_Product_Code.isna(), "Effective_Producer_Code"] = country_df.loc[country_df.Animal_Product_Code.isna(), "Producer_Country_Code"]
+    country_df.loc[country_df.Animal_Product_Code=="Primary", "Effective_Producer_Code"] = country_df.loc[country_df.Animal_Product_Code=="Primary", "Producer_Country_Code"]
+    country_df["TotalProduction"] = 0.0
+    country_df.loc[country_df.Animal_Product_Code.isna(), "TotalProduction"] = country_df.loc[country_df.Animal_Product_Code.isna(), "provenance"]
+    country_df.loc[country_df.Animal_Product_Code=="Primary", "TotalProduction"] = country_df.loc[country_df.Animal_Product_Code=="Primary", "provenance"]
+    country_df = country_df[["ItemT_Code", "bd_opp_cost_calc", "TotalProduction", "Effective_Producer_Code"]]
+
+
+    df = pd.concat([df, country_df], ignore_index=True)
+
+
+df = df.groupby(["ItemT_Code", "Effective_Producer_Code"]).sum().reset_index()
+
+
+df = df.merge(commodity_crosswalk[["Item_Code", "group_name_v6"]], left_on="ItemT_Code", right_on=["Item_Code"], how="left")
+df = df.drop(columns=["ItemT_Code", "Item_Code"])
+# df = df.groupby(["group_name_v6", "Effective_Producer_Code"]).sum().reset_index()
+df["Impact_per_kg"] = df["bd_opp_cost_calc"] / (df["TotalProduction"]*1000)
+# df = df.drop(columns=["bd_opp_cost_calc"])
+# print(df)
 
 import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     area_codes = pd.read_excel(f"../input_data/nocsDataExport_20251021-164754.xlsx", engine="openpyxl")  
-    area_codes = area_codes[["ISO3", "FAOSTAT"]].rename(columns={"ISO3":"Country_ISO", "FAOSTAT":"Country_Code"})
-fao_prod = fao_prod.merge(area_codes, on="Country_Code", how="left")
-
-print(fao_prod)
-
-for country_iso in os.listdir(f"{results_dir}/{year}"):
-    if len(country_iso) != 3 or not os.path.exists(f"{results_dir}/{year}/{country_iso}/df_{country_iso.lower()}.csv"):
-        continue
-    country_df = pd.read_csv(f"{results_dir}/{year}/{country_iso}/df_{country_iso.lower()}.csv")
-    country_df = country_df.rename(columns={"Unnamed: 0": "Item"})
-    country_df = country_df[["Item", "bd_opp_total"]].merge(item_codes, on="Item", how="left")
-    country_df = country_df.merge(fao_prod[fao_prod.Country_ISO == country_iso][["Item_Code", "Cons"]], on="Item_Code", how="left")
-    country_df = country_df.merge(commodity_crosswalk[["Item_Code", "group_name_v6"]], on="Item_Code", how="left")
-    country_df = country_df.drop(columns=["Item"])
-    country_df = country_df.groupby("group_name_v6").sum().reset_index()
-    country_df["Impact_per_kg"] = country_df["bd_opp_total"] / (country_df["Cons"]*1000)
-    country_df = country_df.drop(columns=["bd_opp_total"])
-    df = pd.concat([df, country_df], ignore_index=True)
+    area_codes = area_codes[["ISO3", "FAOSTAT"]].rename(columns={"ISO3":"Country", "FAOSTAT":"Effective_Producer_Code"})
+df = df.merge(area_codes, on="Effective_Producer_Code", how="left")
 
 group_df = pd.DataFrame(columns=["group_name_v6", "median_impact", "q10", "q90", "colour", "count"])
+quants=[0.1, 0.5, 0.9]
 
-for group in df["group_name_v6"].unique():
+groups = list(df["group_name_v6"].unique())
+try:
+    groups.remove(np.nan)
+except:
+    pass
+
+for group in groups:
     group_data = df[df["group_name_v6"] == group]
+    # if group == "Dairy":
+    #     print(group_data.sort_values(by="TotalProduction", ascending=False)[["Country", "Impact_per_kg", "TotalProduction"]]["TotalProduction"].sum())
     group_data = group_data.dropna(subset=["Impact_per_kg"])
+    group_data = group_data[group_data["Impact_per_kg"]>0]
     occurences = group_data.shape[0]
-    median_impact = np.percentile(a=group_data["Impact_per_kg"], q=50, weights=group_data["Cons"], method="inverted_cdf")
-    q10 = np.percentile(a=group_data["Impact_per_kg"], q=10, weights=group_data["Cons"], method="inverted_cdf")
-    q90 = np.percentile(a=group_data["Impact_per_kg"], q=90, weights=group_data["Cons"], method="inverted_cdf")
+    q10, median_impact, q90 = weighted_quantile(values=group_data["Impact_per_kg"], quantiles=quants, sample_weight=group_data["TotalProduction"], values_sorted=False)
+    median_impact = np.percentile(a=group_data["Impact_per_kg"], q=50, weights=group_data["TotalProduction"], method="inverted_cdf")
+    q10 = np.percentile(a=group_data["Impact_per_kg"], q=10, weights=group_data["TotalProduction"], method="inverted_cdf")
+    q90 = np.percentile(a=group_data["Impact_per_kg"], q=90, weights=group_data["TotalProduction"], method="inverted_cdf")
     colour = colourdict.get(group, "#A2A2A2")
     group_df.loc[len(group_df)] = [group, median_impact, q10, q90, colour, occurences]
 
@@ -119,6 +175,6 @@ ax.set_xlim(-0.6, len(group_df)-0.4)
 ax.set_ylim(1e-13, 1e-7)
 ax.set_yscale("log")
 ax.set_ylabel("Extinction opportunity cost distribution \n ($\Delta$E per kilogram)")
-plt.savefig("../outputs/Fig1_recreation.png", dpi=600, bbox_inches='tight')
+plt.savefig(f"../outputs/Fig1_recreation{year}.png", dpi=600, bbox_inches='tight')
 
     

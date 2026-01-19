@@ -43,9 +43,7 @@ results_dir = "../results/"
 for year in os.listdir(results_dir):
     if year == "impacts":
         continue
-    for country in os.listdir(f"{results_dir}{year}"):
-        if country == ".mrio" or country == "missing_items.txt" or country == "AUS":
-            continue
+    for country in ["USA", "IND", "BRA", "JPN", "UGA", "GBR"]:
 
         df1 = pd.read_csv(f"{results_dir}{year}/{country}/df_{country.lower()}.csv", index_col=0)
         df1 = df1[["Group", "bd_opp_total", "bd_opp_total_err"]]

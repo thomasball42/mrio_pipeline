@@ -97,7 +97,8 @@ def get_impacts(wdf, year, coi, filename, results_dir=Path("./results")):
 
         wdf = wdf.merge(tb_pasture_vals, how="left", on=["Country_ISO", "Item_Code"])
         wdf = wdf.merge(global_median_tb_df, how="left", left_on=["Item_Code"], right_index=True)
-        wdf["Pasture_avg"] = wdf[["Pasture_avg","fp_m2_kg", "global_median_fp_m2_kg"]].min(axis=1)
+        # wdf["Pasture_avg"] = wdf[["Pasture_avg","fp_m2_kg", "global_median_fp_m2_kg"]].max(axis=1)
+        wdf["Pasture_avg"] = wdf["fp_m2_kg"]
         wdf = wdf.drop(columns=["fp_m2_kg", "global_median_fp_m2_kg"])
 
     # set non-applicable values to zero
