@@ -87,7 +87,7 @@ master_df_imports = master_df_imports.merge(order, on="Group")
 master_df_imports = master_df_imports.sort_values(["Country", "Year", "Order"])
 master_df_imports = master_df_imports.drop(columns=["Order"])
 
-fig, axs = plt.subplots(figsize=(6, 8))
+fig, axs = plt.subplots(figsize=(10,10))
 country = "GBR"
 master_df_local = master_df_local[master_df_local["Country"] == country]
 master_df_imports = master_df_imports[master_df_imports["Country"] == country]
@@ -119,7 +119,7 @@ for i, Group in enumerate(groups):
 
 
     start = 0
-    plot = axs.plot(master_df_imports_group["Cons"].iloc[start:], master_df_imports_group[variable2].iloc[start:], color=color_dict[Group], label=Group, zorder=2)
+    plot = axs.plot(master_df_imports_group["Cons"].iloc[start:], master_df_imports_group[variable2].iloc[start:], color=color_dict[Group], zorder=2)
     plot = axs.plot(master_df_local_group["Cons"].iloc[start:], master_df_local_group[variable2].iloc[start:], color=color_dict[Group], linestyle=":",zorder=2)
     try:
         plt.scatter(master_df_imports_group["Cons"].iloc[start], master_df_imports_group[variable2].iloc[start],
@@ -133,18 +133,18 @@ for i, Group in enumerate(groups):
         plt.scatter(master_df_local_group["Cons"].iloc[start], master_df_local_group[variable2].iloc[start],
                     color="black", marker="o", s=40, edgecolor=color_dict[Group], zorder=3)
         plt.scatter(master_df_local_group["Cons"].iloc[-1], master_df_local_group[variable2].iloc[-1],
-                    color=color_dict[Group], marker="o", s=40, edgecolor=color_dict[Group], zorder=3)
+                    color=color_dict[Group], marker="o", s=40, edgecolor=color_dict[Group], label=Group, zorder=3)
     except:
         pass
 
 total_grid_color = "#2F7FF8"
-for i in range(-14, -8):
+for i in range(-14, -7):
     i = 10 ** (i)
     x = np.logspace(-2, 0, 50)
     y = i/x
     axs.plot(x, y, color=total_grid_color, alpha=0.4, linewidth=0.8, zorder=1)
 
-for j in range(-15, -8):
+for j in range(-15, -7):
     for i in np.linspace(1*(10**j), 9*(10**j), 9):
         
         x = np.logspace(-2, 0, 50)
@@ -158,11 +158,20 @@ y = np.abs(axs.get_ylim()).max()
 axs.axhline(0, color="black", linewidth=0.8)
 axs.set_ylabel("Impact per kg")
 axs.set_xlabel("Daily consumption per capita, kg")
-axs.set_title(f"Change in daily biodiversity impacts per capita - {country}\nImports (solid) vs Local production (dashed)\n2011 (black dot) to 2021 (colored)")
-axs.set_ylim(1e-13, 1e-8)
+axs.set_title(f"Change in daily biodiversity impacts per capita - {country}\nImports (solid) vs Local production (dashed)\n2010 (black dot) to 2021 (colored)")
+axs.set_ylim(1e-13, 1e-7)
 axs.set_xlim(1e-2, 1)
 axs.set_yscale("log")
 axs.set_xscale("log")
+axs.legend(title="Food Group")
 
-
+ax2 = axs.twiny()
+ax2.set_xscale('log')
+x1, x2 = axs.get_xlim()
+y1, y2 = axs.get_ylim()
+ax2.set_xlim(x1*y2, x2*y2)
+ax2.set_xlabel("Total Daily Extinctions per capita", color=total_grid_color)
+ax2.tick_params(axis='x', colors=total_grid_color)
+fig.tight_layout()
+plt.savefig("../outputs/Impacts_change_GBR.png")
 plt.show()
