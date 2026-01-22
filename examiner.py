@@ -5,7 +5,7 @@ Examines the data - "simple"
 import pandas as pd
 import os
 import readline
-
+pd.options.display.float_format = "{:,.4f}".format
 results_location = "results"
 
 
@@ -115,7 +115,7 @@ Data Type: """))
 
             print_df = apply_filters(df, filters)
 
-            print(names[i], "\n", print_df[columns].head(10), end="\n\n")
+            print(names[i], "\n", print_df[columns], end="\n\n")
         
         if len(sum_to_print) > 0:
             print("Sum Results: ")
@@ -285,7 +285,7 @@ def apply_filters(dataframe_origin, filters):
         elif filter_type == "<":
             dataframe = dataframe[pd.to_numeric(dataframe[col_name], errors='coerce') < float(filter_value)]
         else:
-            dataframe = dataframe[dataframe[col_name] == filter_value.astype(dataframe[col_name].dtype)]
+            dataframe = dataframe[dataframe[col_name].astype(type(filter_value)) == filter_value]
 
     return dataframe
 
