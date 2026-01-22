@@ -67,14 +67,15 @@ Data Type: """))
                     files.append(f"{results_location}/{year}/{country}/impacts_aggregated.csv")
                     names.append(f"impacts_aggregated {country} {year}")
                 elif data_type == 5:
-                    files.append(f"{results_location}/{year}/{country}/impacts_{country}.csv")
+                    files.append(f"{results_location}/{year}/{country}/df_{country.lower()}.csv")
                     names.append(f"impacts_domestic {country} {year}")
                 elif data_type == 6:
-                    files.append(f"{results_location}/{year}/{country}/impacts_os.csv")
+                    files.append(f"{results_location}/{year}/{country}/df_os.csv")
                     names.append(f"impacts_overseas {country} {year}")
 
     # Clear the console for better readability
     os.system('cls' if os.name == 'nt' else 'clear')
+    print("Loading files...")
 
 
     for i, file in enumerate(files):
@@ -88,7 +89,11 @@ Data Type: """))
     dataframes = []
     for file in files:
         df = pd.read_csv(file)
+        if "Unnamed: 0" in df.columns and df["Unnamed: 0"].dtype == int:
+            df = df.drop(columns=["Unnamed: 0"])
         dataframes.append(df)
+
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 
 
@@ -161,8 +166,11 @@ Data Type: """))
         elif option == 5:
             dataframes = []
             columns = []
+            filters = []
             for file in files:
                 df = pd.read_csv(file)
+                if "Unnamed: 0" in df.columns and df["Unnamed: 0"].dtype == int:
+                    df = df.drop(columns=["Unnamed: 0"])
                 dataframes.append(df)
 
         elif option == 6:
@@ -177,6 +185,8 @@ def display_columns(dataframes, names):
         print(f"{i}: {col}", end="\n")    
     print("\nSelect columns to display (comma-separated indices, e.g., 0,2,5).")
     columns = input("Columns: ")
+    if columns.strip() == "":
+        return dataframes, f.columns.tolist()
     columns = [int(column.strip()) for column in columns.split(",") if int(column.strip()) < len(f.columns) and int(column.strip()) >= 0]
     selected_columns = [f.columns[column] for column in columns]
     return dataframes, selected_columns
@@ -209,6 +219,7 @@ def sort(dataframes, columns):
 
 def col_sum(dataframes, columns, names, sum_to_print, filters):
     print("\nSelect column to sum:")
+    columns = [c for c in columns if dataframes[0][c].dtype in [int, float] ]
     for i, col in enumerate(columns):
         print(f"{i}: {col}", end="\n")    
     sum_column = -1
@@ -225,7 +236,9 @@ def col_sum(dataframes, columns, names, sum_to_print, filters):
     for i, df in enumerate(dataframes):
         df2 = apply_filters(df, filters)
         total = df2[sum_col_name].sum()
-        sum_to_print.append(f"Sum of {sum_col_name} in {names[i]}: {'{:,}'.format(total)}, with filters: {", ".join(filters).replace(":", " ")}")
+        if total > 100:
+            total = total.round(2)
+        sum_to_print.append(f"Sum of {sum_col_name} in {names[i]}: {'{:,}'.format(total)}, with filters: {", ".join(filters).replace(":", " ") if len(filters) > 0 else "None"}")
     return sum_to_print
 
 
@@ -245,8 +258,8 @@ def filter_dataframes(dataframes, columns, filters):
 
     filter_col_name = columns[filter_column]
 
-    filter_type = input("Filter type (=/contains/>/<): ").strip()
-    if filter_type not in ["=", "contains", ">", "<"]:
+    filter_type = input("Filter type (=/contains/>/<) (`c` is a valid option for `contains`): ").strip()
+    if filter_type not in ["=", "contains", ">", "<", "c", "C"]:
         print("Invalid filter type. Defaulting to '='.")
         filter_type = "="
     filter_value = input("Filter value: ").strip()
@@ -265,14 +278,14 @@ def apply_filters(dataframe_origin, filters):
         filter_value = parts[2]
         
 
-        if filter_type == "contains":
-            dataframe = dataframe[dataframe[col_name].astype(str).str.contains(filter_value)]
+        if filter_type in ["contains", "c", "C"]:
+            dataframe = dataframe[dataframe[col_name].astype(str).str.contains(f"(?i){filter_value}")]
         elif filter_type == ">":
             dataframe = dataframe[pd.to_numeric(dataframe[col_name], errors='coerce') > float(filter_value)]
         elif filter_type == "<":
             dataframe = dataframe[pd.to_numeric(dataframe[col_name], errors='coerce') < float(filter_value)]
         else:
-            dataframe = dataframe[dataframe[col_name] == filter_value]
+            dataframe = dataframe[dataframe[col_name] == filter_value.astype(dataframe[col_name].dtype)]
 
     return dataframe
 
@@ -283,4 +296,3 @@ def apply_filters(dataframe_origin, filters):
 if __name__ == "__main__":
     while True:
         main()
-        input("Press Enter to continue...")    
