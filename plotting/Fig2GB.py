@@ -64,6 +64,8 @@ for year in os.listdir(results_dir):
 
         df2 = pd.read_csv(f"{results_dir}{year}/{country}/df_os.csv", index_col=0)
         df2 = df2[["Group", variable, "bd_opp_total", "bd_opp_total_err"]]
+        if country == "GBR":
+            print(df2[df2["Group"]=="Ruminant meat"], year)
         df2 = df2.groupby(["Group"]).sum().reset_index()
         df2["Year"] = int(year)
         df2["Country"] = country
@@ -87,6 +89,11 @@ master_df_imports = master_df_imports.merge(order, on="Group")
 master_df_imports = master_df_imports.sort_values(["Country", "Year", "Order"])
 master_df_imports = master_df_imports.drop(columns=["Order"])
 
+m = master_df_local.copy()
+m = m[(m["Country"] == "GBR")&(m["Group"]=="Ruminant meat")]
+print(m[m["Year"].isin([2010, 2021])])
+
+
 fig, axs = plt.subplots(figsize=(6, 8))
 country = "GBR"
 master_df_local = master_df_local[master_df_local["Country"] == country]
@@ -94,23 +101,26 @@ master_df_imports = master_df_imports[master_df_imports["Country"] == country]
 
 
 variable2 = "Impact per kg"
-master_df_local[variable2] = master_df_local["bd_opp_total"] / master_df_local[variable]
-master_df_imports[variable2] = master_df_imports["bd_opp_total"] / master_df_imports[variable]
+master_df_local[variable2] = master_df_local["bd_opp_total"] / master_df_local["Cons"]
+master_df_imports[variable2] = master_df_imports["bd_opp_total"] / master_df_imports["Cons"]
+
+plot_var = variable # kg
+plot_var = variable2 # E/kg
+plot_var = "bd_opp_total" # E
 
 for i, Group in enumerate(groups):
-    master_df_imports_group = master_df_imports[master_df_imports["Group"] == Group]
-    master_df_local_group = master_df_local[master_df_local["Group"] == Group]
-
+    master_df_imports_group = master_df_imports[master_df_imports["Group"] == Group].sort_values("Year").reset_index(drop=True)
+    master_df_local_group = master_df_local[master_df_local["Group"] == Group].sort_values("Year").reset_index(drop=True)
     try:
-        master_df_imports_group[variable2] = (master_df_imports_group[variable2] /
-                                                   master_df_imports_group.loc[master_df_imports_group.first_valid_index(), variable2] - 1)*100
-        plot = sns.lineplot(master_df_imports_group, x="Year", y=variable2, color=color_dict[Group], ax=axs, label=Group,)
+        master_df_imports_group[plot_var] = ((master_df_imports_group[plot_var] /
+                                                    master_df_imports_group.copy().loc[master_df_imports_group.first_valid_index(), plot_var]) - 1)*100
+        plot = sns.lineplot(master_df_imports_group, x="Year", y=plot_var, color=color_dict[Group], ax=axs, label=Group,)
     except KeyError:
         pass
     try:
-        master_df_local_group[variable2] = (master_df_local_group[variable2] / 
-                                                 master_df_local_group.loc[master_df_local_group.first_valid_index(), variable2] - 1)*100
-        plot = sns.lineplot(master_df_local_group, x="Year", y=variable2, color=color_dict[Group], ax=axs, linestyle=":")
+        master_df_local_group[plot_var] = ((master_df_local_group[plot_var] / 
+                                                 master_df_local_group.loc[master_df_local_group.first_valid_index(), plot_var]) - 1)*100
+        plot = sns.lineplot(master_df_local_group, x="Year", y=plot_var, color=color_dict[Group], ax=axs, linestyle=":")
     except KeyError:
         pass
 
@@ -120,7 +130,7 @@ axs.set_ylim(-100, 100)
 axs.set_xlim(master_df_local["Year"].min(), master_df_local["Year"].max())
 axs.axhline(0, color="black", linewidth=0.8)
 axs.set_ylabel("% Change since 2000")
-axs.set_title(f"Change in Impact per kg (%) since 2000 - {country}\nImports (solid) vs Local production (dashed)")
+axs.set_title(f"Change in {plot_var} (%) since 2010 - {country}\nImports (solid) vs Local production (dashed)")
 # axs[i].set_ylim(0, 5e-9)
 
 
