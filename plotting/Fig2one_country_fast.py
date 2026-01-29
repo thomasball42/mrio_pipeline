@@ -37,6 +37,12 @@ pop_data["Value"] *= 1000  # convert to individuals
 
 
 countries = [a[-7:-4] for a in os.listdir("../results/impacts/2010")]
+def shuffle(lst):
+    import random
+    # random.seed(44)
+    random.shuffle(lst)
+    return lst
+countries = shuffle(countries)
 results_dir = "../results/"
 
 for country in countries:

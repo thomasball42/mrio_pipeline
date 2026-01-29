@@ -5,7 +5,7 @@ Examines the data - "simple"
 import pandas as pd
 import os
 import readline
-pd.options.display.float_format = "{:,.4f}".format
+pd.options.display.float_format = "{:,.4g}".format
 results_location = "results"
 
 
@@ -258,8 +258,8 @@ def filter_dataframes(dataframes, columns, filters):
 
     filter_col_name = columns[filter_column]
 
-    filter_type = input("Filter type (=/contains/>/<) (`c` is a valid option for `contains`): ").strip()
-    if filter_type not in ["=", "contains", ">", "<", "c", "C"]:
+    filter_type = input("Filter type (=/!=/contains/>/<) (`c` is a valid option for `contains`): ").strip()
+    if filter_type not in ["=", "contains", ">", "<", "c", "C", "!="]:
         print("Invalid filter type. Defaulting to '='.")
         filter_type = "="
     filter_value = input("Filter value: ").strip()
@@ -284,6 +284,8 @@ def apply_filters(dataframe_origin, filters):
             dataframe = dataframe[pd.to_numeric(dataframe[col_name], errors='coerce') > float(filter_value)]
         elif filter_type == "<":
             dataframe = dataframe[pd.to_numeric(dataframe[col_name], errors='coerce') < float(filter_value)]
+        elif filter_type == "!=":
+            dataframe = dataframe[dataframe[col_name].astype(type(filter_value)) != str(filter_value)]
         else:
             dataframe = dataframe[dataframe[col_name].astype(type(filter_value)) == filter_value]
 
